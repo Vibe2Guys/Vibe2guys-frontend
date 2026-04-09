@@ -1,0 +1,452 @@
+import 'dart:async';
+
+import 'api_client.dart';
+import 'api_contract.dart';
+
+class MockApiClient implements ApiClient {
+  String? _accessToken;
+  AppUser? _currentUser;
+
+  @override
+  String? get accessToken => _accessToken;
+  @override
+  AppUser? get currentUser => _currentUser;
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> login({
+    required String email,
+    required String password,
+    required UserRole role,
+  }) async {
+    await Future<void>.delayed(const Duration(milliseconds: 350));
+    if (email.isEmpty || password.isEmpty) {
+      return const ApiResponse(
+        success: false,
+        message: '이메일/비밀번호를 입력해주세요.',
+        errorCode: 'INVALID_CREDENTIALS',
+      );
+    }
+
+    _currentUser = AppUser(
+      userId: role == UserRole.student ? 1 : 20,
+      name: role == UserRole.student ? '홍길동' : '김교수',
+      email: email,
+      role: role,
+    );
+    _accessToken = 'mock-jwt-token-${DateTime.now().millisecondsSinceEpoch}';
+    return ApiResponse(
+      success: true,
+      message: '로그인 성공',
+      data: {
+        'accessToken': _accessToken,
+        'user': _currentUser,
+      },
+    );
+  }
+
+  @override
+  void logout() {
+    _accessToken = null;
+    _currentUser = null;
+  }
+
+  @override
+  Future<ApiResponse<List<Map<String, dynamic>>>> getMyCourses() async {
+    final unauthorized = _unauthorized<List<Map<String, dynamic>>>();
+    if (unauthorized != null) return unauthorized;
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    return const ApiResponse(
+      success: true,
+      message: '내 강의 목록 조회 성공',
+      data: [
+        {
+          'courseId': 101,
+          'title': 'AI 기초',
+          'description': 'AI 개론 수업',
+          'thumbnailUrl': 'https://images.example.com/course-101',
+          'instructorName': '김교수',
+          'progressRate': 72,
+          'attendanceRate': 85,
+          'assignmentPendingCount': 2,
+        },
+        {
+          'courseId': 102,
+          'title': '데이터 사고법',
+          'description': '문제 해결을 위한 데이터 사고 훈련',
+          'thumbnailUrl': 'https://images.example.com/course-102',
+          'instructorName': '이교수',
+          'progressRate': 41,
+          'attendanceRate': 66,
+          'assignmentPendingCount': 1,
+        },
+      ],
+    );
+  }
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> getCourseDetail(int courseId) async {
+    final unauthorized = _unauthorized<Map<String, dynamic>>();
+    if (unauthorized != null) return unauthorized;
+    await Future<void>.delayed(const Duration(milliseconds: 180));
+    return ApiResponse(
+      success: true,
+      message: '강의 상세 조회 성공',
+      data: {
+        'courseId': courseId,
+        'title': 'AI 기초',
+        'description': 'AI 개론 수업입니다.',
+        'instructor': {'userId': 20, 'name': '김교수'},
+        'startDate': '2026-04-10',
+        'endDate': '2026-06-30',
+        'weeks': [
+          {'weekId': 1001, 'weekNumber': 1, 'title': 'AI란 무엇인가', 'isOpened': true},
+          {'weekId': 1002, 'weekNumber': 2, 'title': '지도학습 기초', 'isOpened': true},
+          {'weekId': 1003, 'weekNumber': 3, 'title': '과적합과 일반화', 'isOpened': false},
+        ],
+      },
+    );
+  }
+
+  @override
+  Future<ApiResponse<List<Map<String, dynamic>>>> getCourseAssignments(
+    int courseId,
+  ) async {
+    final unauthorized = _unauthorized<List<Map<String, dynamic>>>();
+    if (unauthorized != null) return unauthorized;
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    return const ApiResponse(
+      success: true,
+      message: '과제 목록 조회 성공',
+      data: [
+        {
+          'assignmentId': 7001,
+          'title': '1주차 요약 과제',
+          'type': 'SUBJECTIVE',
+          'dueAt': '2026-04-15T23:59:59+09:00',
+          'isSubmitted': false,
+        },
+        {
+          'assignmentId': 7002,
+          'title': '2주차 개념 비교',
+          'type': 'SUBJECTIVE',
+          'dueAt': '2026-04-22T23:59:59+09:00',
+          'isSubmitted': true,
+        },
+      ],
+    );
+  }
+
+  @override
+  Future<ApiResponse<List<Map<String, dynamic>>>> getCourseQuizzes(int courseId) async {
+    final unauthorized = _unauthorized<List<Map<String, dynamic>>>();
+    if (unauthorized != null) return unauthorized;
+    await Future<void>.delayed(const Duration(milliseconds: 160));
+    return const ApiResponse(
+      success: true,
+      message: '퀴즈 목록 조회 성공',
+      data: [
+        {
+          'quizId': 6001,
+          'title': '1주차 퀴즈',
+          'dueAt': '2026-04-16T23:59:59+09:00',
+          'isSubmitted': false,
+        },
+      ],
+    );
+  }
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> getContentDetail(int contentId) async {
+    final unauthorized = _unauthorized<Map<String, dynamic>>();
+    if (unauthorized != null) return unauthorized;
+    await Future<void>.delayed(const Duration(milliseconds: 180));
+    return ApiResponse(
+      success: true,
+      message: '콘텐츠 상세 조회 성공',
+      data: {
+        'contentId': contentId,
+        'type': 'VOD',
+        'title': '1주차 강의 영상',
+        'description': 'OT 및 기본 개념',
+        'durationSeconds': 1800,
+        'myProgress': {
+          'progressRate': 35,
+          'lastPositionSeconds': 620,
+          'isCompleted': false,
+        },
+      },
+    );
+  }
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> saveProgress({
+    required int contentId,
+    required int progressRate,
+    required int watchedSeconds,
+  }) async {
+    final unauthorized = _unauthorized<Map<String, dynamic>>();
+    if (unauthorized != null) return unauthorized;
+    await Future<void>.delayed(const Duration(milliseconds: 160));
+    return ApiResponse(
+      success: true,
+      message: '진도 저장 완료',
+      data: {
+        'contentId': contentId,
+        'progressRate': progressRate,
+        'lastPositionSeconds': watchedSeconds,
+        'isCompleted': progressRate >= 100,
+      },
+    );
+  }
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> getAssignmentDetail(int assignmentId) async {
+    final unauthorized = _unauthorized<Map<String, dynamic>>();
+    if (unauthorized != null) return unauthorized;
+    await Future<void>.delayed(const Duration(milliseconds: 180));
+    return ApiResponse(
+      success: true,
+      message: '과제 상세 조회 성공',
+      data: {
+        'assignmentId': assignmentId,
+        'title': '1주차 요약 과제',
+        'description': '강의 내용을 300자 이상 요약하세요.',
+        'type': 'SUBJECTIVE',
+        'dueAt': '2026-04-15T23:59:59+09:00',
+        'mySubmission': {'submissionId': null, 'status': 'NOT_SUBMITTED'},
+      },
+    );
+  }
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> submitAssignment({
+    required int assignmentId,
+    required String answerText,
+  }) async {
+    final unauthorized = _unauthorized<Map<String, dynamic>>();
+    if (unauthorized != null) return unauthorized;
+    await Future<void>.delayed(const Duration(milliseconds: 250));
+    if (answerText.trim().length < 5) {
+      return const ApiResponse(
+        success: false,
+        message: '답변이 너무 짧습니다.',
+        errorCode: 'INVALID_ANSWER',
+      );
+    }
+    return ApiResponse(
+      success: true,
+      message: '과제 제출 완료',
+      data: {
+        'submissionId': 8001,
+        'assignmentId': assignmentId,
+        'submittedAt': DateTime.now().toIso8601String(),
+        'status': 'SUBMITTED',
+      },
+    );
+  }
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> getStudentDashboard() async {
+    final unauthorized = _unauthorized<Map<String, dynamic>>();
+    if (unauthorized != null) return unauthorized;
+    await Future<void>.delayed(const Duration(milliseconds: 140));
+    return const ApiResponse(
+      success: true,
+      message: '학습자 대시보드 조회 성공',
+      data: {
+        'attendanceRate': 85,
+        'progressRate': 72,
+        'assignmentSubmitRate': 75,
+        'understandingScore': 68,
+        'engagementScore': 70,
+        'riskLevel': 'MEDIUM',
+        'coachingMessage': '최근 학습 흐름이 조금 떨어지고 있어요. 1주차 핵심 개념을 복습해보세요.',
+      },
+    );
+  }
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> getMyReport() async {
+    final unauthorized = _unauthorized<Map<String, dynamic>>();
+    if (unauthorized != null) return unauthorized;
+    await Future<void>.delayed(const Duration(milliseconds: 150));
+    return const ApiResponse(
+      success: true,
+      message: '내 학습 리포트 조회 성공',
+      data: {
+        'weeklySummary': '이번 주는 출석은 안정적이지만 특정 개념에서 반복 시청이 많았습니다.',
+        'strengths': ['출석 성실', '퀴즈 점수 양호'],
+        'weaknesses': ['개념 연결 부족', '팀 토론 참여 저조'],
+        'nextActions': ['과적합 개념 복습', '꼬리질문 답변하기'],
+      },
+    );
+  }
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> getRecommendations(int studentId) async {
+    final unauthorized = _unauthorized<Map<String, dynamic>>();
+    if (unauthorized != null) return unauthorized;
+    await Future<void>.delayed(const Duration(milliseconds: 150));
+    return ApiResponse(
+      success: true,
+      message: '추천 조회 성공',
+      data: {
+        'studentId': studentId,
+        'reviewConcepts': ['지도학습', '과적합'],
+        'recommendedActions': ['오늘 10분 복습하기', '꼬리질문 1개 더 풀어보기', '팀 토론에 의견 1회 남기기'],
+      },
+    );
+  }
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> getMyTeam() async {
+    final unauthorized = _unauthorized<Map<String, dynamic>>();
+    if (unauthorized != null) return unauthorized;
+    await Future<void>.delayed(const Duration(milliseconds: 140));
+    return const ApiResponse(
+      success: true,
+      message: '내 팀 조회 성공',
+      data: {
+        'teamId': 3001,
+        'teamName': '1팀',
+        'courseId': 101,
+        'members': [
+          {'userId': 1, 'name': '홍길동'},
+          {'userId': 2, 'name': '김학생'},
+          {'userId': 3, 'name': '이학생'},
+        ],
+      },
+    );
+  }
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> getTeamDetail(int teamId) async {
+    final unauthorized = _unauthorized<Map<String, dynamic>>();
+    if (unauthorized != null) return unauthorized;
+    await Future<void>.delayed(const Duration(milliseconds: 140));
+    return ApiResponse(
+      success: true,
+      message: '팀 상세 조회 성공',
+      data: {
+        'teamId': teamId,
+        'collaborationScore': 72,
+        'riskSignals': ['특정 학생 채팅 참여 없음'],
+      },
+    );
+  }
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> getTeamChatRoom(int teamId) async {
+    final unauthorized = _unauthorized<Map<String, dynamic>>();
+    if (unauthorized != null) return unauthorized;
+    await Future<void>.delayed(const Duration(milliseconds: 120));
+    return ApiResponse(
+      success: true,
+      message: '채팅방 조회 성공',
+      data: {'chatRoomId': 4001, 'teamId': teamId},
+    );
+  }
+
+  @override
+  Future<ApiResponse<List<Map<String, dynamic>>>> getChatMessages(int chatRoomId) async {
+    final unauthorized = _unauthorized<List<Map<String, dynamic>>>();
+    if (unauthorized != null) return unauthorized;
+    await Future<void>.delayed(const Duration(milliseconds: 120));
+    return const ApiResponse(
+      success: true,
+      message: '채팅 메시지 조회 성공',
+      data: [
+        {
+          'messageId': 101,
+          'senderName': '홍길동',
+          'message': '이 개념은 이렇게 이해하면 될까요?',
+          'sentAt': '2026-04-06T21:00:00+09:00',
+        },
+        {
+          'messageId': 102,
+          'senderName': '김학생',
+          'message': '좋아요. 예시를 하나 더 찾아볼게요.',
+          'sentAt': '2026-04-06T21:01:30+09:00',
+        },
+      ],
+    );
+  }
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> getInstructorDashboard(int courseId) async {
+    final unauthorized = _unauthorized<Map<String, dynamic>>();
+    if (unauthorized != null) return unauthorized;
+    await Future<void>.delayed(const Duration(milliseconds: 140));
+    return ApiResponse(
+      success: true,
+      message: '교수자 대시보드 조회 성공',
+      data: {
+        'courseId': courseId,
+        'courseTitle': 'AI 기초',
+        'studentCount': 40,
+        'averageAttendanceRate': 82,
+        'averageProgressRate': 70,
+        'highRiskStudentCount': 5,
+        'lowUnderstandingStudentCount': 7,
+      },
+    );
+  }
+
+  @override
+  Future<ApiResponse<List<Map<String, dynamic>>>> getRiskStudents(int courseId) async {
+    final unauthorized = _unauthorized<List<Map<String, dynamic>>>();
+    if (unauthorized != null) return unauthorized;
+    await Future<void>.delayed(const Duration(milliseconds: 140));
+    return const ApiResponse(
+      success: true,
+      message: '위험 학생 목록 조회 성공',
+      data: [
+        {'studentId': 1, 'studentName': '홍길동', 'riskScore': 78, 'riskLevel': 'HIGH'},
+        {'studentId': 7, 'studentName': '박학생', 'riskScore': 71, 'riskLevel': 'HIGH'},
+      ],
+    );
+  }
+
+  @override
+  Future<ApiResponse<List<Map<String, dynamic>>>> getLowUnderstandingStudents(
+    int courseId,
+  ) async {
+    final unauthorized = _unauthorized<List<Map<String, dynamic>>>();
+    if (unauthorized != null) return unauthorized;
+    await Future<void>.delayed(const Duration(milliseconds: 140));
+    return const ApiResponse(
+      success: true,
+      message: '이해도 낮은 학생 조회 성공',
+      data: [
+        {'studentId': 2, 'studentName': '김학생', 'understandingScore': 52},
+        {'studentId': 5, 'studentName': '최학생', 'understandingScore': 48},
+      ],
+    );
+  }
+
+  @override
+  Future<ApiResponse<List<Map<String, dynamic>>>> getInterventions(int courseId) async {
+    final unauthorized = _unauthorized<List<Map<String, dynamic>>>();
+    if (unauthorized != null) return unauthorized;
+    await Future<void>.delayed(const Duration(milliseconds: 140));
+    return const ApiResponse(
+      success: true,
+      message: '개입 추천 조회 성공',
+      data: [
+        {'studentName': '홍길동', 'recommendedAction': '상담 권장'},
+        {'studentName': '김학생', 'recommendedAction': '보충자료 발송'},
+      ],
+    );
+  }
+
+  ApiResponse<T>? _unauthorized<T>() {
+    if (_accessToken == null || _currentUser == null) {
+      return const ApiResponse(
+        success: false,
+        message: '인증이 필요합니다.',
+        errorCode: 'UNAUTHORIZED',
+      );
+    }
+    return null;
+  }
+}
