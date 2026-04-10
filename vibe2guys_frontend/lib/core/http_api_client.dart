@@ -11,6 +11,11 @@ class HttpApiClient implements ApiClient {
       : _client = client ?? http.Client(),
         _fallback = MockApiClient();
 
+  static const bool _allowFallback = bool.fromEnvironment(
+    'ALLOW_API_FALLBACK',
+    defaultValue: false,
+  );
+
   final http.Client _client;
   final MockApiClient _fallback;
 
@@ -308,6 +313,13 @@ class HttpApiClient implements ApiClient {
       );
       return _parse(response);
     } catch (_) {
+      if (!_allowFallback) {
+        return const ApiResponse(
+          success: false,
+          message: 'Network error',
+          errorCode: 'NETWORK_ERROR',
+        );
+      }
       return _fallbackFor(path);
     }
   }
@@ -325,6 +337,13 @@ class HttpApiClient implements ApiClient {
       );
       return _parse(response);
     } catch (_) {
+      if (!_allowFallback) {
+        return const ApiResponse(
+          success: false,
+          message: 'Network error',
+          errorCode: 'NETWORK_ERROR',
+        );
+      }
       return _fallbackFor(path, body: body);
     }
   }
