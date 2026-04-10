@@ -45,7 +45,7 @@ class MockApiClient implements ApiClient {
   }
 
   @override
-  void logout() {
+  Future<void> logout() async {
     _accessToken = null;
     _currentUser = null;
   }
@@ -183,6 +183,7 @@ class MockApiClient implements ApiClient {
     required int contentId,
     required int progressRate,
     required int watchedSeconds,
+    required int totalSeconds,
   }) async {
     final unauthorized = _unauthorized<Map<String, dynamic>>();
     if (unauthorized != null) return unauthorized;

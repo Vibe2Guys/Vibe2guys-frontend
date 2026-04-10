@@ -15,6 +15,7 @@ class HttpApiClient implements ApiClient {
   final MockApiClient _fallback;
 
   String? _accessToken;
+  String? _refreshToken;
   AppUser? _currentUser;
 
   @override
@@ -51,6 +52,7 @@ class HttpApiClient implements ApiClient {
     final data = response.data as Map<String, dynamic>? ?? {};
     final userMap = data['user'] as Map<String, dynamic>? ?? {};
     _accessToken = data['accessToken'] as String?;
+    _refreshToken = data['refreshToken'] as String?;
     _currentUser = AppUser(
       userId: (userMap['userId'] as num?)?.toInt() ?? 0,
       name: (userMap['name'] as String?) ?? '',
@@ -62,6 +64,7 @@ class HttpApiClient implements ApiClient {
       message: response.message,
       data: {
         'accessToken': _accessToken,
+        'refreshToken': _refreshToken,
         'user': _currentUser,
       },
       errorCode: response.errorCode,
@@ -69,8 +72,20 @@ class HttpApiClient implements ApiClient {
   }
 
   @override
-  void logout() {
+  Future<void> logout() async {
+    if (_refreshToken != null && _accessToken != null) {
+      try {
+        await _post(
+          '/auth/logout',
+          body: {'refreshToken': _refreshToken},
+          withAuth: true,
+        );
+      } catch (_) {
+        // Ignore network/logout failures and clear the local session anyway.
+      }
+    }
     _accessToken = null;
+    _refreshToken = null;
     _currentUser = null;
   }
 
@@ -99,12 +114,16 @@ class HttpApiClient implements ApiClient {
     required int contentId,
     required int progressRate,
     required int watchedSeconds,
+    required int totalSeconds,
   }) {
     return _postMap(
       '/contents/$contentId/progress',
       body: {
-        'progressRate': progressRate,
+        'watchedSeconds': watchedSeconds,
+        'totalSeconds': totalSeconds,
         'lastPositionSeconds': watchedSeconds,
+        'replayCount': 0,
+        'eventType': progressRate >= 100 ? 'ENDED' : 'PAUSE',
       },
     );
   }
@@ -132,23 +151,74 @@ class HttpApiClient implements ApiClient {
   Future<ApiResponse<Map<String, dynamic>>> getMyReport() => _getMap('/reports/me');
 
   @override
-  Future<ApiResponse<Map<String, dynamic>>> getRecommendations(int studentId) =>
-      _getMap('/students/$studentId/recommendations');
+  Future<ApiResponse<Map<String, dynamic>>> getRecommendations(int studentId) async {
+    final response = await _get('/students/$studentId/recommendations');
+    final data = _extractMap(response.data);
+    return ApiResponse(
+      success: response.success,
+      message: response.message,
+      data: {
+        'recommendedActions': _extractStringList(data['recommendations']),
+      },
+      errorCode: response.errorCode,
+    );
+  }
 
   @override
-  Future<ApiResponse<Map<String, dynamic>>> getMyTeam() => _getMap('/teams/me');
+  Future<ApiResponse<Map<String, dynamic>>> getMyTeam() async {
+    final response = await _get('/teams/me');
+    final teams = _extractList(response.data);
+    final first = teams.isEmpty ? <String, dynamic>{} : teams.first;
+    return ApiResponse(
+      success: response.success,
+      message: response.message,
+      data: {
+        'teamId': first['teamId'],
+        'teamName': first['name'],
+        'memberCount': first['memberCount'],
+        'status': first['status'],
+      },
+      errorCode: response.errorCode,
+    );
+  }
 
   @override
-  Future<ApiResponse<Map<String, dynamic>>> getTeamDetail(int teamId) =>
-      _getMap('/teams/$teamId');
+  Future<ApiResponse<Map<String, dynamic>>> getTeamDetail(int teamId) async {
+    final response = await _get('/teams/$teamId');
+    final data = _extractMap(response.data);
+    return ApiResponse(
+      success: response.success,
+      message: response.message,
+      data: {
+        ...data,
+        'teamName': data['name'],
+      },
+      errorCode: response.errorCode,
+    );
+  }
 
   @override
   Future<ApiResponse<Map<String, dynamic>>> getTeamChatRoom(int teamId) =>
       _getMap('/teams/$teamId/chat-room');
 
   @override
-  Future<ApiResponse<List<Map<String, dynamic>>>> getChatMessages(int chatRoomId) =>
-      _getList('/chat-rooms/$chatRoomId/messages');
+  Future<ApiResponse<List<Map<String, dynamic>>>> getChatMessages(int chatRoomId) async {
+    final response = await _get('/chat-rooms/$chatRoomId/messages');
+    final data = _extractList(response.data)
+        .map(
+          (item) => {
+            ...item,
+            'message': item['messageBody'],
+          },
+        )
+        .toList();
+    return ApiResponse(
+      success: response.success,
+      message: response.message,
+      data: data,
+      errorCode: response.errorCode,
+    );
+  }
 
   @override
   Future<ApiResponse<Map<String, dynamic>>> getInstructorDashboard(int courseId) =>
@@ -165,15 +235,44 @@ class HttpApiClient implements ApiClient {
       _getList('/instructors/courses/$courseId/students/understanding-low');
 
   @override
-  Future<ApiResponse<List<Map<String, dynamic>>>> getInterventions(int courseId) =>
-      _getList('/instructors/courses/$courseId/interventions');
-
-  Future<ApiResponse<Map<String, dynamic>>> _getMap(String path) async {
-    final response = await _get(path);
+  Future<ApiResponse<List<Map<String, dynamic>>>> getInterventions(int courseId) async {
+    final response = await _get('/instructors/courses/$courseId/interventions');
+    final data = _extractList(response.data)
+        .map(
+          (item) => {
+            ...item,
+            'recommendedAction': item['title'] ?? item['message'],
+          },
+        )
+        .toList();
     return ApiResponse(
       success: response.success,
       message: response.message,
-      data: _extractMap(response.data),
+      data: data,
+      errorCode: response.errorCode,
+    );
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> _getMap(String path) async {
+    final response = await _get(path);
+    final data = _extractMap(response.data);
+    if (path == '/reports/me') {
+      final dashboard = _extractMap(data['dashboard']);
+      return ApiResponse(
+        success: response.success,
+        message: response.message,
+        data: {
+          'weeklySummary': dashboard['coachingMessage'] ?? response.message,
+          'todayTodos': _extractStringList(dashboard['todayTodos']),
+          'riskLevel': dashboard['riskLevel'],
+        },
+        errorCode: response.errorCode,
+      );
+    }
+    return ApiResponse(
+      success: response.success,
+      message: response.message,
+      data: data,
       errorCode: response.errorCode,
     );
   }
@@ -298,6 +397,13 @@ class HttpApiClient implements ApiClient {
         .toList();
   }
 
+  List<String> _extractStringList(dynamic raw) {
+    if (raw is List) {
+      return raw.map((value) => '$value').toList();
+    }
+    return const <String>[];
+  }
+
   Future<ApiResponse<dynamic>> _fallbackFor(
     String path, {
     Map<String, dynamic>? body,
@@ -311,10 +417,13 @@ class HttpApiClient implements ApiClient {
     }
     if (path.startsWith('/courses/')) return _fallback.getCourseDetail(_extractId(path));
     if (path.startsWith('/contents/') && path.endsWith('/progress')) {
+      final watchedSeconds = (body?['lastPositionSeconds'] as num?)?.toInt() ?? 0;
+      final totalSeconds = (body?['totalSeconds'] as num?)?.toInt() ?? 1;
       return _fallback.saveProgress(
         contentId: _extractId(path),
-        progressRate: (body?['progressRate'] as num?)?.toInt() ?? 0,
-        watchedSeconds: (body?['lastPositionSeconds'] as num?)?.toInt() ?? 0,
+        progressRate: totalSeconds <= 0 ? 0 : (watchedSeconds * 100 ~/ totalSeconds),
+        watchedSeconds: watchedSeconds,
+        totalSeconds: totalSeconds,
       );
     }
     if (path.startsWith('/contents/')) return _fallback.getContentDetail(_extractId(path));

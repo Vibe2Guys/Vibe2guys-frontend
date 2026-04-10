@@ -10,7 +10,7 @@ abstract class ApiClient {
     required UserRole role,
   });
 
-  void logout();
+  Future<void> logout();
 
   Future<ApiResponse<List<Map<String, dynamic>>>> getMyCourses();
   Future<ApiResponse<Map<String, dynamic>>> getCourseDetail(int courseId);
@@ -21,6 +21,7 @@ abstract class ApiClient {
     required int contentId,
     required int progressRate,
     required int watchedSeconds,
+    required int totalSeconds,
   });
   Future<ApiResponse<Map<String, dynamic>>> getAssignmentDetail(int assignmentId);
   Future<ApiResponse<Map<String, dynamic>>> submitAssignment({
