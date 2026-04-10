@@ -67,8 +67,8 @@ class AppController extends ChangeNotifier {
     return response;
   }
 
-  void logout() {
-    api.logout();
+  Future<void> logout() async {
+    await api.logout();
     selectedIndex = 0;
     notifyListeners();
   }
@@ -234,7 +234,7 @@ class AppShell extends StatelessWidget {
               ),
             ),
             trailing: IconButton(
-              onPressed: controller.logout,
+              onPressed: () => controller.logout(),
               icon: const Icon(Icons.logout),
               tooltip: '로그아웃',
             ),
@@ -434,6 +434,7 @@ class _StudentContentPageState extends State<StudentContentPage> {
                   contentId: 5001,
                   progressRate: progressRate,
                   watchedSeconds: watched,
+                  totalSeconds: (content['durationSeconds'] as num?)?.toInt() ?? 1800,
                 );
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -536,9 +537,9 @@ class StudentTeamPage extends StatelessWidget {
             Text('팀 활동', style: Theme.of(context).textTheme.headlineSmall),
             const SizedBox(height: 12),
             InfoCard(
-              title: '${team['teamName']} (협업점수 ${detail['collaborationScore']})',
+              title: '${detail['teamName'] ?? team['teamName']} (협업점수 ${detail['collaborationScore']})',
               content:
-                  '팀원: ${(team['members'] as List<dynamic>).map((e) => (e as Map<String, dynamic>)['name']).join(', ')}',
+                  '팀원: ${((detail['members'] as List<dynamic>? ?? const []).map((e) => (e as Map<String, dynamic>)['name']).join(', '))}',
             ),
             const SizedBox(height: 12),
             ...messages.map(
