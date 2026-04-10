@@ -170,7 +170,7 @@ class _LoginPageState extends State<LoginPage> {
                                   password: passwordController.text,
                                   role: selectedRole,
                                 );
-                                if (!mounted) return;
+                                if (!context.mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(content: Text(response.message)),
                                 );
@@ -436,7 +436,7 @@ class _StudentContentPageState extends State<StudentContentPage> {
                   watchedSeconds: watched,
                   totalSeconds: (content['durationSeconds'] as num?)?.toInt() ?? 1800,
                 );
-                if (!mounted) return;
+                if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text(response.message)),
                 );
@@ -495,7 +495,7 @@ class _StudentAssignmentPageState extends State<StudentAssignmentPage> {
                   assignmentId: 7001,
                   answerText: answerController.text,
                 );
-                if (!mounted) return;
+                if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text(response.message)),
                 );
@@ -734,7 +734,7 @@ class MetricCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.teal.withOpacity(0.08),
+            color: Colors.teal.withValues(alpha: 0.08),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -790,7 +790,7 @@ class InfoCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.teal.withOpacity(0.22)),
+        border: Border.all(color: Colors.teal.withValues(alpha: 0.22)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
