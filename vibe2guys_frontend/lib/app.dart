@@ -761,7 +761,8 @@ class AppShell extends StatelessWidget {
     final items = role == UserRole.student
         ? [
             const _NavItem('대시보드', Icons.space_dashboard_rounded),
-            const _NavItem('강의', Icons.menu_book_rounded),
+            const _NavItem('내 강의', Icons.menu_book_rounded),
+            const _NavItem('강의 신청', Icons.search_rounded),
             const _NavItem('콘텐츠', Icons.play_circle_outline_rounded),
             const _NavItem('과제', Icons.assignment_rounded),
             const _NavItem('팀 활동', Icons.groups_rounded),
@@ -944,14 +945,16 @@ class AppShell extends StatelessWidget {
         case 0:
           return StudentDashboardPage(controller: controller);
         case 1:
-          return StudentCoursesPage(controller: controller);
+          return StudentMyCoursesPage(controller: controller);
         case 2:
-          return StudentContentPage(controller: controller);
+          return StudentCourseCatalogPage(controller: controller);
         case 3:
-          return StudentAssignmentPage(controller: controller);
+          return StudentContentPage(controller: controller);
         case 4:
-          return StudentTeamPage(controller: controller);
+          return StudentAssignmentPage(controller: controller);
         case 5:
+          return StudentTeamPage(controller: controller);
+        case 6:
           if (kShowDeveloperApi) return const ApiRulesPage();
           return StudentDashboardPage(controller: controller);
         default:
@@ -1056,20 +1059,109 @@ class StudentDashboardPage extends StatelessWidget {
   }
 }
 
-class StudentCoursesPage extends StatefulWidget {
-  const StudentCoursesPage({super.key, required this.controller});
+class StudentMyCoursesPage extends StatefulWidget {
+  const StudentMyCoursesPage({super.key, required this.controller});
   final AppController controller;
 
   @override
-  State<StudentCoursesPage> createState() => _StudentCoursesPageState();
+  State<StudentMyCoursesPage> createState() => _StudentMyCoursesPageState();
 }
 
-class _StudentCoursesPageState extends State<StudentCoursesPage> {
+class _StudentMyCoursesPageState extends State<StudentMyCoursesPage> {
+  int? selectedCourseId;
+  int? selectedWeekId;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<ApiResponse<List<Map<String, dynamic>>>>(
+      future: widget.controller.api.getMyCourses(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final courses = snapshot.data!.data ?? [];
+        if (selectedCourseId == null && courses.isNotEmpty) {
+          selectedCourseId = _asInt(courses.first['courseId']);
+        }
+        return ListView(
+          children: [
+            const DashboardHeroCard(
+              title: '내 강의',
+              subtitle: '수강 중인 강의를 선택하면 강의 개요와 주차별 학습 구성을 바로 볼 수 있습니다.',
+            ),
+            const SizedBox(height: 16),
+            SectionPanel(
+              title: '수강 중인 강의',
+              child: courses.isEmpty
+                  ? const EmptyStateCard(
+                      title: '수강 중인 강의가 없습니다',
+                      description: '강의 신청 메뉴에서 공개 강의를 찾거나 강의 코드로 등록할 수 있습니다.',
+                    )
+                  : Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: courses
+                          .map(
+                            (course) => SizedBox(
+                              width: 280,
+                              child: _SelectionCard(
+                                title: _displayText(course['title']),
+                                description:
+                                    '진도 ${_asInt(course['progressRate'])}% · 출석 ${_asInt(course['attendanceRate'])}%\n강의 코드 ${_displayText(course['courseCode'], emptyMessage: '-')}',
+                                selected: _asInt(course['courseId']) ==
+                                    selectedCourseId,
+                                onTap: () {
+                                  setState(() {
+                                    selectedCourseId =
+                                        _asInt(course['courseId']);
+                                    selectedWeekId = null;
+                                  });
+                                },
+                              ),
+                            ),
+                          )
+                          .toList(),
+                    ),
+            ),
+            const SizedBox(height: 16),
+            if (selectedCourseId != null)
+              _StudentCourseOverview(
+                controller: widget.controller,
+                courseId: selectedCourseId!,
+                selectedWeekId: selectedWeekId,
+                onWeekSelected: (weekId) =>
+                    setState(() => selectedWeekId = weekId),
+                heroTitle: '강의 구성',
+                heroSubtitle: '강의 개요와 주차별 콘텐츠를 확인할 수 있습니다.',
+              ),
+            const SizedBox(height: 10),
+            const EndpointChip(label: 'GET ${Endpoints.coursesMy}'),
+            EndpointChip(label: 'GET ${Endpoints.courseDetail(101)}'),
+            EndpointChip(label: 'GET ${Endpoints.weekContents(101, 1001)}'),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class StudentCourseCatalogPage extends StatefulWidget {
+  const StudentCourseCatalogPage({super.key, required this.controller});
+  final AppController controller;
+
+  @override
+  State<StudentCourseCatalogPage> createState() =>
+      _StudentCourseCatalogPageState();
+}
+
+class _StudentCourseCatalogPageState extends State<StudentCourseCatalogPage> {
   final TextEditingController searchController = TextEditingController();
   final TextEditingController courseCodeController = TextEditingController();
   int refreshSeed = 0;
   bool enrollingByCode = false;
   Set<int> enrollingCourseIds = <int>{};
+  int? selectedCourseId;
+  int? selectedWeekId;
 
   @override
   void dispose() {
@@ -1080,27 +1172,23 @@ class _StudentCoursesPageState extends State<StudentCoursesPage> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<ApiResponse<dynamic>>>(
+    return FutureBuilder<ApiResponse<List<Map<String, dynamic>>>>(
       key: ValueKey(refreshSeed),
-      future: Future.wait<ApiResponse<dynamic>>([
-        widget.controller.api.getMyCourses(),
-        widget.controller.api.getCourses(keyword: searchController.text.trim()),
-      ]),
+      future: widget.controller.api
+          .getCourses(keyword: searchController.text.trim()),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
-        final myCourses =
-            snapshot.data![0].data as List<Map<String, dynamic>>? ?? [];
-        final discoverCourses =
-            snapshot.data![1].data as List<Map<String, dynamic>>? ?? [];
+        final courses = snapshot.data!.data ?? [];
+        if (selectedCourseId == null && courses.isNotEmpty) {
+          selectedCourseId = _asInt(courses.first['courseId']);
+        }
         return ListView(
           children: [
-            DashboardHeroCard(
-              title: '강의',
-              subtitle: myCourses.isEmpty
-                  ? '강의 코드를 입력하거나 공개 강의를 찾아 바로 등록할 수 있습니다.'
-                  : '수강 중인 강의를 확인하고 새 공개 강의도 바로 찾아 등록할 수 있습니다.',
+            const DashboardHeroCard(
+              title: '강의 신청',
+              subtitle: '공개 강의를 찾아 내용을 미리 보고 수강신청하거나, 비공개 강의는 코드로 등록할 수 있습니다.',
             ),
             const SizedBox(height: 16),
             SectionPanel(
@@ -1125,7 +1213,7 @@ class _StudentCoursesPageState extends State<StudentCoursesPage> {
             ),
             const SizedBox(height: 16),
             SectionPanel(
-              title: '공개 강의 찾기',
+              title: '공개 강의 목록',
               child: Column(
                 children: [
                   Row(
@@ -1145,40 +1233,65 @@ class _StudentCoursesPageState extends State<StudentCoursesPage> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  if (discoverCourses.isEmpty)
+                  if (courses.isEmpty)
                     const EmptyStateCard(
                       title: '검색된 공개 강의가 없습니다',
                       description: '강의 제목을 바꿔 검색해보세요.',
                     )
                   else
-                    ...discoverCourses
-                        .map((course) => _buildDiscoverCourse(course)),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            SectionPanel(
-              title: '내 강의 목록',
-              child: myCourses.isEmpty
-                  ? const EmptyStateCard(
-                      title: '수강 중인 강의가 없습니다',
-                      description: '공개 강의 검색 또는 강의 코드 등록으로 수업을 시작할 수 있습니다.',
-                    )
-                  : Column(
-                      children: myCourses
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: courses
                           .map(
-                            (course) => InfoCard(
-                              title: _displayText(course['title'],
-                                  emptyMessage: '제목 미정'),
-                              content:
-                                  '진도 ${_asInt(course['progressRate'])}% | 출석 ${_asInt(course['attendanceRate'])}% | 미제출 ${_asInt(course['assignmentPendingCount'])}개 | 강의 코드 ${_displayText(course['courseCode'], emptyMessage: '-')}',
+                            (course) => SizedBox(
+                              width: 280,
+                              child: _SelectionCard(
+                                title: _displayText(course['title']),
+                                description:
+                                    '${_displayText(course['instructorName'])}\n${_displayText(course['description'], emptyMessage: '강의 설명이 없습니다.')}',
+                                selected: _asInt(course['courseId']) ==
+                                    selectedCourseId,
+                                onTap: () {
+                                  setState(() {
+                                    selectedCourseId =
+                                        _asInt(course['courseId']);
+                                    selectedWeekId = null;
+                                  });
+                                },
+                              ),
                             ),
                           )
                           .toList(),
                     ),
+                ],
+              ),
             ),
+            const SizedBox(height: 16),
+            if (selectedCourseId != null)
+              _StudentCourseOverview(
+                controller: widget.controller,
+                courseId: selectedCourseId!,
+                selectedWeekId: selectedWeekId,
+                onWeekSelected: (weekId) =>
+                    setState(() => selectedWeekId = weekId),
+                heroTitle: '강의 미리보기',
+                heroSubtitle: '강의를 신청하지 않아도 개요와 주차별 자료 구성을 먼저 확인할 수 있습니다.',
+                footer: Align(
+                  alignment: Alignment.centerLeft,
+                  child: FilledButton.tonal(
+                    onPressed: enrollingCourseIds.contains(selectedCourseId!)
+                        ? null
+                        : () => _enrollCourse(selectedCourseId!),
+                    child: Text(
+                      enrollingCourseIds.contains(selectedCourseId!)
+                          ? '신청 중...'
+                          : '이 강의 수강신청',
+                    ),
+                  ),
+                ),
+              ),
             const SizedBox(height: 10),
-            const EndpointChip(label: 'GET ${Endpoints.coursesMy}'),
             const EndpointChip(label: 'GET ${Endpoints.courses}'),
             const EndpointChip(label: 'POST ${Endpoints.enrollByCode}'),
             EndpointChip(
@@ -1186,64 +1299,6 @@ class _StudentCoursesPageState extends State<StudentCoursesPage> {
           ],
         );
       },
-    );
-  }
-
-  Widget _buildDiscoverCourse(Map<String, dynamic> course) {
-    final courseId = _asInt(course['courseId']);
-    final isEnrolled = course['isEnrolled'] == true;
-    final isPublic = course['isPublic'] == true;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFDCE8E4)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  _displayText(course['title']),
-                  style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w800),
-                ),
-              ),
-              _StatusChip(label: '구분', value: isPublic ? '공개' : '비공개'),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _displayText(course['description'], emptyMessage: '강의 설명이 없습니다.'),
-            style: const TextStyle(color: Color(0xFF64757B), height: 1.5),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '담당 교수 ${_displayText(course['instructorName'])} · 강의 코드 ${_displayText(course['courseCode'], emptyMessage: '-')}',
-            style: const TextStyle(color: Color(0xFF64757B)),
-          ),
-          const SizedBox(height: 12),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: FilledButton.tonal(
-              onPressed: isEnrolled || enrollingCourseIds.contains(courseId)
-                  ? null
-                  : () => _enrollCourse(courseId),
-              child: Text(
-                isEnrolled
-                    ? '이미 등록됨'
-                    : enrollingCourseIds.contains(courseId)
-                        ? '등록 중...'
-                        : '수강신청',
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -1279,6 +1334,203 @@ class _StudentCoursesPageState extends State<StudentCoursesPage> {
         refreshSeed++;
       }
     });
+  }
+}
+
+class _StudentCourseOverview extends StatelessWidget {
+  const _StudentCourseOverview({
+    required this.controller,
+    required this.courseId,
+    required this.selectedWeekId,
+    required this.onWeekSelected,
+    required this.heroTitle,
+    required this.heroSubtitle,
+    this.footer,
+  });
+
+  final AppController controller;
+  final int courseId;
+  final int? selectedWeekId;
+  final void Function(int weekId) onWeekSelected;
+  final String heroTitle;
+  final String heroSubtitle;
+  final Widget? footer;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<ApiResponse<Map<String, dynamic>>>(
+      future: controller.api.getCourseDetail(courseId),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final course = snapshot.data!.data ?? {};
+        final weeks = ((course['weeks'] as List<dynamic>?) ?? const [])
+            .whereType<Map<String, dynamic>>()
+            .toList();
+        final effectiveWeekId = selectedWeekId ??
+            (weeks.isNotEmpty ? _asInt(weeks.first['weekId']) : null);
+        if (effectiveWeekId != null && selectedWeekId == null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            onWeekSelected(effectiveWeekId);
+          });
+        }
+        return Column(
+          children: [
+            SectionPanel(
+              title: heroTitle,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  InfoCard(
+                    title: _displayText(course['title']),
+                    content:
+                        '${_displayText(course['description'], emptyMessage: '강의 소개가 아직 없습니다.')}\n강의 코드 ${_displayText(course['courseCode'], emptyMessage: '-')} · ${course['isPublic'] == true ? '공개 강의' : '비공개 강의'}',
+                  ),
+                  InfoCard(
+                    title: '강의 기본 정보',
+                    content:
+                        '담당 교수 ${_displayText((course['instructor'] as Map<String, dynamic>?)?['name'], emptyMessage: '미정')} · 시작 ${_displayText(course['startDate'])} · 종료 ${_displayText(course['endDate'])}',
+                  ),
+                  Text(
+                    heroSubtitle,
+                    style: const TextStyle(
+                      color: Color(0xFF64757B),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (footer != null) ...[
+                    const SizedBox(height: 12),
+                    footer!,
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            SectionPanel(
+              title: '주차 목록',
+              child: weeks.isEmpty
+                  ? const EmptyStateCard(
+                      title: '등록된 주차가 없습니다',
+                      description: '강의 주차가 등록되면 이곳에서 순서대로 볼 수 있습니다.',
+                    )
+                  : Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: weeks
+                          .map(
+                            (week) => SizedBox(
+                              width: 220,
+                              child: _SelectionCard(
+                                title:
+                                    '${_asInt(week['weekNumber'])}주차 · ${_displayText(week['title'])}',
+                                description: '클릭하면 주차별 자료와 콘텐츠를 볼 수 있습니다.',
+                                selected:
+                                    _asInt(week['weekId']) == effectiveWeekId,
+                                onTap: () =>
+                                    onWeekSelected(_asInt(week['weekId'])),
+                              ),
+                            ),
+                          )
+                          .toList(),
+                    ),
+            ),
+            const SizedBox(height: 16),
+            if (effectiveWeekId != null)
+              _StudentWeekPreview(
+                controller: controller,
+                courseId: courseId,
+                weekId: effectiveWeekId,
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _StudentWeekPreview extends StatelessWidget {
+  const _StudentWeekPreview({
+    required this.controller,
+    required this.courseId,
+    required this.weekId,
+  });
+
+  final AppController controller;
+  final int courseId;
+  final int weekId;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<ApiResponse<List<Map<String, dynamic>>>>(
+      future: controller.api.getWeekContents(courseId, weekId),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final contents = snapshot.data!.data ?? [];
+        return SectionPanel(
+          title: '주차 자료',
+          child: contents.isEmpty
+              ? const EmptyStateCard(
+                  title: '등록된 자료가 없습니다',
+                  description: '교안이나 영상이 올라오면 이곳에서 확인할 수 있습니다.',
+                )
+              : Column(
+                  children: contents
+                      .map(
+                        (content) => Container(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: const Color(0xFFDCE8E4)),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _StatusChip(
+                                label: '유형',
+                                value: _displayText(content['type'],
+                                    emptyMessage: '자료'),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _displayText(content['title']),
+                                      style: const TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      _displayText(
+                                        content['description'],
+                                        emptyMessage:
+                                            '강의 개요 또는 교안 설명이 아직 없습니다.',
+                                      ),
+                                      style: const TextStyle(
+                                        color: Color(0xFF64757B),
+                                        height: 1.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
+        );
+      },
+    );
   }
 }
 
