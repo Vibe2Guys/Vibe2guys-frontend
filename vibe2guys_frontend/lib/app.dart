@@ -1943,7 +1943,7 @@ class _InstructorTeamAnalysisPageState extends State<InstructorTeamAnalysisPage>
         return Column(
           children: [
             SectionPanel(
-              title: '팀 자동 구성',
+              title: 'AI 팀 빌딩',
               child: Row(
                 children: [
                   Expanded(
@@ -1956,7 +1956,7 @@ class _InstructorTeamAnalysisPageState extends State<InstructorTeamAnalysisPage>
                   const SizedBox(width: 12),
                   FilledButton(
                     onPressed: () => _autoGroup(courseId),
-                    child: const Text('자동 배정'),
+                    child: const Text('AI 배정'),
                   ),
                 ],
               ),
@@ -1979,7 +1979,7 @@ class _InstructorTeamAnalysisPageState extends State<InstructorTeamAnalysisPage>
                               child: _SelectionCard(
                                 title: _displayText(team['name']),
                                 description:
-                                    '인원 ${_asInt(team['memberCount'])}명 · ${_displayText(team['status'])}',
+                                    '인원 ${_asInt(team['memberCount'])}명 · 팀빌딩 ${_asInt(team['teamBuildingScore'])}\n${_displayText(team['matchingSummary'], emptyMessage: '추천 사유가 없습니다.')}',
                                 selected: _asInt(team['teamId']) == selectedTeamId,
                                 onTap: () {
                                   setState(() {
@@ -2003,17 +2003,57 @@ class _InstructorTeamAnalysisPageState extends State<InstructorTeamAnalysisPage>
   Widget _buildSelectedTeamDetail(int teamId) {
     return FutureBuilder<List<ApiResponse<dynamic>>>(
       future: Future.wait<ApiResponse<dynamic>>([
+        widget.controller.api.getTeamDetail(teamId),
         widget.controller.api.getTeamAnalytics(teamId),
         widget.controller.api.getTeamMemberContributions(teamId),
       ]),
       builder: (context, snapshot) {
         if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-        final analytics = snapshot.data![0].data as Map<String, dynamic>? ?? {};
-        final contributions = snapshot.data![1].data as List<Map<String, dynamic>>? ?? [];
+        final detail = snapshot.data![0].data as Map<String, dynamic>? ?? {};
+        final analytics = snapshot.data![1].data as Map<String, dynamic>? ?? {};
+        final contributions = snapshot.data![2].data as List<Map<String, dynamic>>? ?? [];
         final riskSignals = _asStringList(analytics['riskSignals']);
+        final strengthSignals = _asStringList(analytics['strengthSignals']);
+        final members = (detail['members'] as List<dynamic>? ?? [])
+            .whereType<Map<String, dynamic>>()
+            .toList();
+        final styleDistributions = (analytics['styleDistributions'] as List<dynamic>? ?? [])
+            .whereType<Map<String, dynamic>>()
+            .toList();
 
         return Column(
           children: [
+            SectionPanel(
+              title: '팀 빌딩 요약',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      MetricCard(
+                        label: '팀 빌딩 점수',
+                        value: '${_asInt(analytics['teamBuildingScore'])}',
+                      ),
+                      MetricCard(
+                        label: '스타일 다양성',
+                        value: '${_asInt(analytics['profileDiversityScore'])}',
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  InfoCard(
+                    title: '매칭 사유',
+                    content: _displayText(
+                      analytics['matchingSummary'] ?? detail['matchingSummary'],
+                      emptyMessage: '매칭 사유가 없습니다.',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
             SectionPanel(
               title: '팀 협업 지표',
               child: Wrap(
@@ -2041,6 +2081,27 @@ class _InstructorTeamAnalysisPageState extends State<InstructorTeamAnalysisPage>
             ),
             const SizedBox(height: 16),
             SectionPanel(
+              title: '팀 스타일 분포',
+              child: styleDistributions.isEmpty
+                  ? const EmptyStateCard(
+                      title: '스타일 분석이 없습니다',
+                      description: '학습 데이터가 쌓이면 팀 스타일 분포가 표시됩니다.',
+                    )
+                  : Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: styleDistributions
+                          .map(
+                            (item) => MetricCard(
+                              label: _displayText(item['style']),
+                              value: '${_asInt(item['memberCount'])}명',
+                            ),
+                          )
+                          .toList(),
+                    ),
+            ),
+            const SizedBox(height: 16),
+            SectionPanel(
               title: '리스크 신호',
               child: riskSignals.isEmpty
                   ? const EmptyStateCard(
@@ -2061,6 +2122,50 @@ class _InstructorTeamAnalysisPageState extends State<InstructorTeamAnalysisPage>
             ),
             const SizedBox(height: 16),
             SectionPanel(
+              title: '강점 신호',
+              child: strengthSignals.isEmpty
+                  ? const EmptyStateCard(
+                      title: '강점 신호가 없습니다',
+                      description: '현재는 별도 강점 신호를 계산하지 못했습니다.',
+                    )
+                  : Column(
+                      children: strengthSignals
+                          .map(
+                            (signal) => ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              leading: const Icon(Icons.auto_awesome_outlined),
+                              title: Text(signal),
+                            ),
+                          )
+                          .toList(),
+                    ),
+            ),
+            const SizedBox(height: 16),
+            SectionPanel(
+              title: '팀원 스타일 프로필',
+              child: members.isEmpty
+                  ? const EmptyStateCard(
+                      title: '팀원 프로필이 없습니다',
+                      description: '팀원 프로필이 계산되면 이곳에 표시됩니다.',
+                    )
+                  : Column(
+                      children: members
+                          .map(
+                            (member) => ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              title: Text(
+                                '${_displayText(member['name'])} · ${_displayText(member['learningStyle'])}',
+                              ),
+                              subtitle: Text(
+                                '${_displayText(member['profileSummary'])}\n신뢰도 ${_asInt(member['reliabilityScore'])} · 추진 ${_asInt(member['initiativeScore'])} · 지원 ${_asInt(member['supportScore'])} · 이해 ${_asInt(member['understandingScore'])}',
+                              ),
+                            ),
+                          )
+                          .toList(),
+                    ),
+            ),
+            const SizedBox(height: 16),
+            SectionPanel(
               title: '팀원 기여도',
               child: contributions.isEmpty
                   ? const EmptyStateCard(
@@ -2074,7 +2179,7 @@ class _InstructorTeamAnalysisPageState extends State<InstructorTeamAnalysisPage>
                               contentPadding: EdgeInsets.zero,
                               title: Text(_displayText(item['name'])),
                               subtitle: Text(
-                                '메시지 ${_asInt(item['messageCount'])}개 · 기여도 ${_asInt(item['contributionScore'])}',
+                                '${_displayText(item['learningStyle'])} · 신뢰도 ${_asInt(item['reliabilityScore'])} · 메시지 ${_asInt(item['messageCount'])}개 · 기여도 ${_asInt(item['contributionScore'])}',
                               ),
                             ),
                           )

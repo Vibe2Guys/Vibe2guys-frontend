@@ -437,6 +437,8 @@ class MockApiClient implements ApiClient {
         'teamId': 3001,
         'teamName': '1팀',
         'courseId': 101,
+        'teamBuildingScore': 82,
+        'matchingSummary': '추진형, 분석형, 조율형을 섞어 역할 분담이 자연스럽게 일어나도록 구성했습니다.',
         'members': [
           {'userId': 1, 'name': '홍길동'},
           {'userId': 2, 'name': '김학생'},
@@ -455,8 +457,22 @@ class MockApiClient implements ApiClient {
       success: true,
       message: '팀 목록 조회 성공',
       data: [
-        {'teamId': 3001, 'name': '1팀', 'memberCount': 3, 'status': 'ACTIVE'},
-        {'teamId': 3002, 'name': '2팀', 'memberCount': 3, 'status': 'ACTIVE'},
+        {
+          'teamId': 3001,
+          'name': '1팀',
+          'memberCount': 3,
+          'status': 'ACTIVE',
+          'teamBuildingScore': 82,
+          'matchingSummary': '추진형과 분석형을 묶어 실행력과 개념 정교화를 같이 노렸습니다.',
+        },
+        {
+          'teamId': 3002,
+          'name': '2팀',
+          'memberCount': 3,
+          'status': 'ACTIVE',
+          'teamBuildingScore': 76,
+          'matchingSummary': '안정형과 조율형을 섞어 과제 진행 안정성을 높였습니다.',
+        },
       ],
     );
   }
@@ -474,9 +490,24 @@ class MockApiClient implements ApiClient {
       message: '팀 자동 배정 완료',
       data: {
         'teamCount': 2,
+        'groupingBasis': 'LEARNING_STYLE_BALANCED',
         'teams': [
-          {'teamId': 3001, 'name': '1팀', 'memberCount': 3, 'status': 'ACTIVE'},
-          {'teamId': 3002, 'name': '2팀', 'memberCount': 3, 'status': 'ACTIVE'},
+          {
+            'teamId': 3001,
+            'name': '1팀',
+            'memberCount': 3,
+            'status': 'ACTIVE',
+            'teamBuildingScore': 82,
+            'matchingSummary': '추진형과 분석형을 묶어 실행력과 개념 정교화를 같이 노렸습니다.',
+          },
+          {
+            'teamId': 3002,
+            'name': '2팀',
+            'memberCount': 3,
+            'status': 'ACTIVE',
+            'teamBuildingScore': 76,
+            'matchingSummary': '안정형과 조율형을 섞어 과제 진행 안정성을 높였습니다.',
+          },
         ],
       },
     );
@@ -492,8 +523,43 @@ class MockApiClient implements ApiClient {
       message: '팀 상세 조회 성공',
       data: {
         'teamId': teamId,
+        'teamBuildingScore': 82,
+        'profileDiversityScore': 79,
+        'matchingSummary': '추진형, 분석형, 조율형을 함께 배치해 실행력과 의사결정 균형을 노렸습니다.',
         'collaborationScore': 72,
         'riskSignals': ['특정 학생 채팅 참여 없음'],
+        'members': [
+          {
+            'userId': 1,
+            'name': '홍길동',
+            'learningStyle': 'DRIVER',
+            'reliabilityScore': 74,
+            'initiativeScore': 88,
+            'supportScore': 63,
+            'understandingScore': 70,
+            'profileSummary': '실행 속도가 빠르고 먼저 논의를 이끄는 편입니다.',
+          },
+          {
+            'userId': 2,
+            'name': '김학생',
+            'learningStyle': 'ANALYST',
+            'reliabilityScore': 81,
+            'initiativeScore': 60,
+            'supportScore': 69,
+            'understandingScore': 86,
+            'profileSummary': '개념 연결과 문제 구조화가 강점입니다.',
+          },
+          {
+            'userId': 3,
+            'name': '박학생',
+            'learningStyle': 'FACILITATOR',
+            'reliabilityScore': 77,
+            'initiativeScore': 58,
+            'supportScore': 84,
+            'understandingScore': 68,
+            'profileSummary': '출석과 협업 안정성이 높아 팀 조율에 강합니다.',
+          },
+        ],
       },
     );
   }
@@ -507,11 +573,23 @@ class MockApiClient implements ApiClient {
       success: true,
       message: '팀 협업 지표 조회 성공',
       data: {
+        'teamBuildingScore': 82,
+        'profileDiversityScore': 79,
+        'matchingSummary': '추진형, 분석형, 조율형을 함께 배치해 실행력과 의사결정 균형을 노렸습니다.',
         'collaborationScore': 84,
         'conversationBalanceScore': 76,
         'inactiveMemberCount': 0,
         'dominantMemberCount': 1,
         'riskSignals': ['한 명의 발화 비중이 높습니다.'],
+        'strengthSignals': [
+          '서로 다른 학습 스타일이 섞여 있어 역할 분담 가능성이 높습니다.',
+          '팀 대화가 비교적 고르게 분산되어 있습니다.',
+        ],
+        'styleDistributions': [
+          {'style': 'DRIVER', 'memberCount': 1},
+          {'style': 'ANALYST', 'memberCount': 1},
+          {'style': 'FACILITATOR', 'memberCount': 1},
+        ],
       },
     );
   }
@@ -525,9 +603,30 @@ class MockApiClient implements ApiClient {
       success: true,
       message: '팀원 기여도 조회 성공',
       data: [
-        {'userId': 1, 'name': '홍길동', 'messageCount': 12, 'contributionScore': 88},
-        {'userId': 2, 'name': '김학생', 'messageCount': 9, 'contributionScore': 73},
-        {'userId': 3, 'name': '박학생', 'messageCount': 4, 'contributionScore': 51},
+        {
+          'userId': 1,
+          'name': '홍길동',
+          'learningStyle': 'DRIVER',
+          'reliabilityScore': 74,
+          'messageCount': 12,
+          'contributionScore': 88,
+        },
+        {
+          'userId': 2,
+          'name': '김학생',
+          'learningStyle': 'ANALYST',
+          'reliabilityScore': 81,
+          'messageCount': 9,
+          'contributionScore': 73,
+        },
+        {
+          'userId': 3,
+          'name': '박학생',
+          'learningStyle': 'FACILITATOR',
+          'reliabilityScore': 77,
+          'messageCount': 4,
+          'contributionScore': 51,
+        },
       ],
     );
   }
