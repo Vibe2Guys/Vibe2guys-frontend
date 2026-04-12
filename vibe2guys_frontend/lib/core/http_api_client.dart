@@ -198,6 +198,20 @@ class HttpApiClient implements ApiClient {
   }
 
   @override
+  Future<ApiResponse<Map<String, dynamic>>> createVideoUploadUrl({
+    required String fileName,
+    required String contentType,
+  }) {
+    return _postMap(
+      '/uploads/videos/presigned-url',
+      body: {
+        'fileName': fileName,
+        'contentType': contentType,
+      },
+    );
+  }
+
+  @override
   Future<ApiResponse<List<Map<String, dynamic>>>> getCourseAssignments(int courseId) =>
       _getList('/courses/$courseId/assignments');
 

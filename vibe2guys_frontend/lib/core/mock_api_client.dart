@@ -214,6 +214,26 @@ class MockApiClient implements ApiClient {
   }
 
   @override
+  Future<ApiResponse<Map<String, dynamic>>> createVideoUploadUrl({
+    required String fileName,
+    required String contentType,
+  }) async {
+    final unauthorized = _unauthorized<Map<String, dynamic>>();
+    if (unauthorized != null) return unauthorized;
+    await Future<void>.delayed(const Duration(milliseconds: 120));
+    return ApiResponse(
+      success: true,
+      message: '비디오 업로드 URL 생성 완료',
+      data: {
+        'uploadUrl': 'https://example.com/presigned-upload',
+        'fileUrl': 'https://cdn.example.com/$fileName',
+        'objectKey': 'course-videos/mock/$fileName',
+        'expiresInSeconds': 900,
+      },
+    );
+  }
+
+  @override
   Future<ApiResponse<List<Map<String, dynamic>>>> getCourseAssignments(
     int courseId,
   ) async {

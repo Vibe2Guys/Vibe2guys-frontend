@@ -59,6 +59,7 @@ class Endpoints {
   static String weekContents(int courseId, int weekId) =>
       '$baseUrl/courses/$courseId/weeks/$weekId/contents';
   static String createContent(int weekId) => '$baseUrl/weeks/$weekId/contents';
+  static const String createVideoUploadUrl = '$baseUrl/uploads/videos/presigned-url';
   static String courseAssignments(int courseId) =>
       '$baseUrl/courses/$courseId/assignments';
   static String courseQuizzes(int courseId) => '$baseUrl/courses/$courseId/quizzes';

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:http/http.dart' as http;
 
 import 'core/api_client.dart';
 import 'core/api_contract.dart';
@@ -1233,6 +1235,7 @@ class _InstructorCourseManagementPageState extends State<InstructorCourseManagem
   int? selectedWeekId;
   String selectedContentType = 'VOD';
   bool isSequentialRelease = false;
+  bool uploadingVideo = false;
 
   @override
   void dispose() {
@@ -1525,6 +1528,24 @@ class _InstructorCourseManagementPageState extends State<InstructorCourseManagem
                   hintText: 'https://cdn.example.com/video.mp4',
                 ),
                 const SizedBox(height: 12),
+                Row(
+                  children: [
+                    FilledButton.tonal(
+                      onPressed: uploadingVideo ? null : _pickAndUploadVideo,
+                      child: Text(uploadingVideo ? '업로드 중...' : 'S3에 영상 올리기'),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        contentVideoUrlController.text.trim().isEmpty
+                            ? '업로드 후 영상 URL이 자동으로 채워집니다.'
+                            : '업로드 완료: 영상 URL이 연결되었습니다.',
+                        style: const TextStyle(color: Color(0xFF66777D)),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
                 _AuthTextField(
                   controller: contentDurationController,
                   label: '영상 길이(초)',
@@ -1638,6 +1659,77 @@ class _InstructorCourseManagementPageState extends State<InstructorCourseManagem
     setState(() {
       refreshSeed++;
     });
+  }
+
+  Future<void> _pickAndUploadVideo() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['mp4', 'mov', 'webm', 'mkv'],
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty) {
+      return;
+    }
+
+    final file = result.files.single;
+    final bytes = file.bytes;
+    if (bytes == null || bytes.isEmpty) {
+      _notify('파일 데이터를 읽을 수 없습니다.');
+      return;
+    }
+
+    final contentType = _guessVideoContentType(file.extension ?? '');
+    setState(() {
+      uploadingVideo = true;
+    });
+
+    try {
+      final uploadUrlResponse = await widget.controller.api.createVideoUploadUrl(
+        fileName: file.name,
+        contentType: contentType,
+      );
+      if (!uploadUrlResponse.success || uploadUrlResponse.data == null) {
+        _notify(uploadUrlResponse.message);
+        return;
+      }
+      final data = uploadUrlResponse.data!;
+      final uploadUri = Uri.parse('${data['uploadUrl']}');
+      final response = await http.put(
+        uploadUri,
+        headers: {'Content-Type': contentType},
+        body: bytes,
+      );
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        _notify('S3 업로드에 실패했습니다. (${response.statusCode})');
+        return;
+      }
+      setState(() {
+        contentVideoUrlController.text = '${data['fileUrl'] ?? ''}';
+      });
+      _notify('영상 업로드가 완료되었습니다.');
+    } catch (_) {
+      _notify('영상 업로드 중 오류가 발생했습니다.');
+    } finally {
+      if (mounted) {
+        setState(() {
+          uploadingVideo = false;
+        });
+      }
+    }
+  }
+
+  String _guessVideoContentType(String extension) {
+    switch (extension.toLowerCase()) {
+      case 'mov':
+        return 'video/quicktime';
+      case 'webm':
+        return 'video/webm';
+      case 'mkv':
+        return 'video/x-matroska';
+      case 'mp4':
+      default:
+        return 'video/mp4';
+    }
   }
 
   void _notify(String message) {

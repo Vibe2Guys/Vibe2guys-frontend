@@ -47,6 +47,10 @@ abstract class ApiClient {
     String? scheduledAt,
     required String openAt,
   });
+  Future<ApiResponse<Map<String, dynamic>>> createVideoUploadUrl({
+    required String fileName,
+    required String contentType,
+  });
   Future<ApiResponse<List<Map<String, dynamic>>>> getCourseAssignments(int courseId);
   Future<ApiResponse<List<Map<String, dynamic>>>> getCourseQuizzes(int courseId);
   Future<ApiResponse<Map<String, dynamic>>> getContentDetail(int contentId);
