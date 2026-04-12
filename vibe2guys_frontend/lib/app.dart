@@ -110,7 +110,7 @@ class LoginPage extends StatefulWidget {
   State<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMixin {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
@@ -119,12 +119,25 @@ class _LoginPageState extends State<LoginPage> {
   final FocusNode emailFocusNode = FocusNode();
   final FocusNode passwordFocusNode = FocusNode();
   final FocusNode confirmPasswordFocusNode = FocusNode();
+  late final AnimationController shakeController;
   AuthMode mode = AuthMode.login;
   UserRole selectedRole = UserRole.student;
   UserRole registerRole = UserRole.student;
+  String? loginEmailError;
+  String? loginPasswordError;
+
+  @override
+  void initState() {
+    super.initState();
+    shakeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 360),
+    );
+  }
 
   @override
   void dispose() {
+    shakeController.dispose();
     nameController.dispose();
     emailController.dispose();
     passwordController.dispose();
@@ -232,211 +245,244 @@ class _LoginPageState extends State<LoginPage> {
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(36, 32, 36, 32),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF1F5F4),
-                              borderRadius: BorderRadius.circular(16),
+                      child: AnimatedBuilder(
+                        animation: shakeController,
+                        builder: (context, child) {
+                          final progress = shakeController.value;
+                          final offset = progress < 1
+                              ? (1 - progress) * 10 * (progress < 0.25 || (progress >= 0.5 && progress < 0.75) ? 1 : -1)
+                              : 0.0;
+                          return Transform.translate(
+                            offset: Offset(offset, 0),
+                            child: child,
+                          );
+                        },
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF1F5F4),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: SizedBox(
+                                width: double.infinity,
+                                child: SegmentedButton<AuthMode>(
+                                  showSelectedIcon: false,
+                                  style: ButtonStyle(
+                                    minimumSize: WidgetStateProperty.all(
+                                      const Size.fromHeight(52),
+                                    ),
+                                    textStyle: WidgetStateProperty.all(
+                                      const TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                  segments: const [
+                                    ButtonSegment<AuthMode>(
+                                      value: AuthMode.login,
+                                      label: SizedBox(
+                                        width: 120,
+                                        child: Center(child: Text('로그인')),
+                                      ),
+                                    ),
+                                    ButtonSegment<AuthMode>(
+                                      value: AuthMode.register,
+                                      label: SizedBox(
+                                        width: 120,
+                                        child: Center(child: Text('회원가입')),
+                                      ),
+                                    ),
+                                  ],
+                                  selected: {mode},
+                                  onSelectionChanged: (selection) {
+                                    setState(() {
+                                      mode = selection.first;
+                                      loginEmailError = null;
+                                      loginPasswordError = null;
+                                    });
+                                  },
+                                ),
+                              ),
                             ),
-                            child: SizedBox(
-                              width: double.infinity,
-                              child: SegmentedButton<AuthMode>(
-                                showSelectedIcon: false,
+                            const SizedBox(height: 26),
+                            Text(
+                              isRegister ? '회원가입' : '계정 로그인',
+                              style: theme.textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            if (isRegister) ...[
+                              _AuthTextField(
+                                focusNode: nameFocusNode,
+                                nextFocusNode: emailFocusNode,
+                                controller: nameController,
+                                label: '이름',
+                                hintText: '홍길동',
+                              ),
+                              const SizedBox(height: 14),
+                            ],
+                            _AuthTextField(
+                              focusNode: emailFocusNode,
+                              nextFocusNode: passwordFocusNode,
+                              controller: emailController,
+                              label: '이메일',
+                              hintText: 'test@example.com',
+                              keyboardType: TextInputType.emailAddress,
+                              errorText: !isRegister ? loginEmailError : null,
+                              onChanged: !isRegister
+                                  ? (_) {
+                                      if (loginEmailError != null) {
+                                        setState(() => loginEmailError = null);
+                                      }
+                                    }
+                                  : null,
+                            ),
+                            const SizedBox(height: 14),
+                            _AuthTextField(
+                              focusNode: passwordFocusNode,
+                              nextFocusNode:
+                                  isRegister ? confirmPasswordFocusNode : null,
+                              controller: passwordController,
+                              label: '비밀번호',
+                              hintText: isRegister ? '8자 이상 비밀번호' : '비밀번호를 입력하세요',
+                              obscureText: true,
+                              errorText: !isRegister ? loginPasswordError : null,
+                              onChanged: !isRegister
+                                  ? (_) {
+                                      if (loginPasswordError != null) {
+                                        setState(() => loginPasswordError = null);
+                                      }
+                                    }
+                                  : null,
+                            ),
+                            if (isRegister) ...[
+                              const SizedBox(height: 14),
+                              _AuthTextField(
+                                focusNode: confirmPasswordFocusNode,
+                                controller: confirmPasswordController,
+                                label: '비밀번호 확인',
+                                hintText: '비밀번호를 다시 입력하세요',
+                                obscureText: true,
+                              ),
+                            ],
+                            const SizedBox(height: 16),
+                            if (!isRegister) ...[
+                              const Text(
+                                '로그인 역할',
+                                style: TextStyle(
+                                  color: Color(0xFF516168),
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              SegmentedButton<UserRole>(
                                 style: ButtonStyle(
                                   minimumSize: WidgetStateProperty.all(
-                                    const Size.fromHeight(52),
+                                    const Size.fromHeight(46),
                                   ),
                                   textStyle: WidgetStateProperty.all(
                                     const TextStyle(
-                                      fontSize: 15,
+                                      fontSize: 14,
                                       fontWeight: FontWeight.w700,
                                     ),
                                   ),
                                 ),
-                                segments: const [
-                                  ButtonSegment<AuthMode>(
-                                    value: AuthMode.login,
-                                    label: SizedBox(
-                                      width: 120,
-                                      child: Center(child: Text('로그인')),
-                                    ),
-                                  ),
-                                  ButtonSegment<AuthMode>(
-                                    value: AuthMode.register,
-                                    label: SizedBox(
-                                      width: 120,
-                                      child: Center(child: Text('회원가입')),
-                                    ),
-                                  ),
-                                ],
-                                selected: {mode},
+                                segments: UserRole.values
+                                    .map(
+                                      (role) => ButtonSegment<UserRole>(
+                                        value: role,
+                                        label: SizedBox(
+                                          width: 78,
+                                          child: Center(child: Text(role.label)),
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
+                                selected: {selectedRole},
                                 onSelectionChanged: (selection) {
-                                  setState(() => mode = selection.first);
+                                  setState(() => selectedRole = selection.first);
                                 },
                               ),
-                            ),
-                          ),
-                          const SizedBox(height: 26),
-                          Text(
-                            isRegister ? '회원가입' : '계정 로그인',
-                            style: theme.textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          if (isRegister) ...[
-                            _AuthTextField(
-                              focusNode: nameFocusNode,
-                              nextFocusNode: emailFocusNode,
-                              controller: nameController,
-                              label: '이름',
-                              hintText: '홍길동',
-                            ),
-                            const SizedBox(height: 14),
-                          ],
-                          _AuthTextField(
-                            focusNode: emailFocusNode,
-                            nextFocusNode: passwordFocusNode,
-                            controller: emailController,
-                            label: '이메일',
-                            hintText: 'test@example.com',
-                            keyboardType: TextInputType.emailAddress,
-                          ),
-                          const SizedBox(height: 14),
-                          _AuthTextField(
-                            focusNode: passwordFocusNode,
-                            nextFocusNode:
-                                isRegister ? confirmPasswordFocusNode : null,
-                            controller: passwordController,
-                            label: '비밀번호',
-                            hintText: isRegister ? '8자 이상 비밀번호' : '비밀번호를 입력하세요',
-                            obscureText: true,
-                          ),
-                          if (isRegister) ...[
-                            const SizedBox(height: 14),
-                            _AuthTextField(
-                              focusNode: confirmPasswordFocusNode,
-                              controller: confirmPasswordController,
-                              label: '비밀번호 확인',
-                              hintText: '비밀번호를 다시 입력하세요',
-                              obscureText: true,
-                            ),
-                          ],
-                          const SizedBox(height: 16),
-                          if (!isRegister) ...[
-                            const Text(
-                              '로그인 역할',
-                              style: TextStyle(
-                                color: Color(0xFF516168),
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            SegmentedButton<UserRole>(
-                              style: ButtonStyle(
-                                minimumSize: WidgetStateProperty.all(
-                                  const Size.fromHeight(46),
+                            ] else ...[
+                              const Text(
+                                '회원가입 역할',
+                                style: TextStyle(
+                                  color: Color(0xFF516168),
+                                  fontWeight: FontWeight.w700,
                                 ),
-                                textStyle: WidgetStateProperty.all(
-                                  const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
+                              ),
+                              const SizedBox(height: 10),
+                              SegmentedButton<UserRole>(
+                                style: ButtonStyle(
+                                  minimumSize: WidgetStateProperty.all(
+                                    const Size.fromHeight(46),
+                                  ),
+                                  textStyle: WidgetStateProperty.all(
+                                    const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              segments: UserRole.values
-                                  .map(
-                                    (role) => ButtonSegment<UserRole>(
-                                      value: role,
-                                      label: SizedBox(
-                                        width: 78,
-                                        child: Center(child: Text(role.label)),
+                                segments: UserRole.values
+                                    .where((role) => role != UserRole.admin)
+                                    .map(
+                                      (role) => ButtonSegment<UserRole>(
+                                        value: role,
+                                        label: SizedBox(
+                                          width: 78,
+                                          child: Center(child: Text(role.label)),
+                                        ),
                                       ),
-                                    ),
-                                  )
-                                  .toList(),
-                              selected: {selectedRole},
-                              onSelectionChanged: (selection) {
-                                setState(() => selectedRole = selection.first);
-                              },
-                            ),
-                          ] else ...[
-                            const Text(
-                              '회원가입 역할',
-                              style: TextStyle(
-                                color: Color(0xFF516168),
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            SegmentedButton<UserRole>(
-                              style: ButtonStyle(
-                                minimumSize: WidgetStateProperty.all(
-                                  const Size.fromHeight(46),
-                                ),
-                                textStyle: WidgetStateProperty.all(
-                                  const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                              segments: UserRole.values
-                                  .where((role) => role != UserRole.admin)
-                                  .map(
-                                    (role) => ButtonSegment<UserRole>(
-                                      value: role,
-                                      label: SizedBox(
-                                        width: 78,
-                                        child: Center(child: Text(role.label)),
-                                      ),
-                                    ),
-                                  )
-                                  .toList(),
-                              selected: {registerRole},
-                              onSelectionChanged: (selection) {
-                                setState(() => registerRole = selection.first);
-                              },
-                            ),
-                          ],
-                          const SizedBox(height: 20),
-                          SizedBox(
-                            width: double.infinity,
-                            child: FilledButton(
-                              style: FilledButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 18),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
-                              onPressed: widget.controller.loading
-                                  ? null
-                                  : () => isRegister ? _submitRegister() : _submitLogin(),
-                              child: widget.controller.loading
-                                  ? const SizedBox(
-                                      height: 20,
-                                      width: 20,
-                                      child: CircularProgressIndicator(strokeWidth: 2),
                                     )
-                                  : Text(isRegister ? '회원가입' : '로그인'),
+                                    .toList(),
+                                selected: {registerRole},
+                                onSelectionChanged: (selection) {
+                                  setState(() => registerRole = selection.first);
+                                },
+                              ),
+                            ],
+                            const SizedBox(height: 20),
+                            SizedBox(
+                              width: double.infinity,
+                              child: FilledButton(
+                                style: FilledButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 18),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                ),
+                                onPressed: widget.controller.loading
+                                    ? null
+                                    : () => isRegister ? _submitRegister() : _submitLogin(),
+                                child: widget.controller.loading
+                                    ? const SizedBox(
+                                        height: 20,
+                                        width: 20,
+                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                      )
+                                    : Text(isRegister ? '회원가입' : '로그인'),
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 14),
-                          Text(
-                            isRegister
-                                ? '가입 후 같은 화면에서 바로 로그인할 수 있습니다.'
-                                : '테스트 계정이 있으면 이메일과 비밀번호만 입력하면 됩니다.',
-                            style: const TextStyle(
-                              color: Color(0xFF7B8A90),
-                              fontSize: 13,
+                            const SizedBox(height: 14),
+                            Text(
+                              isRegister
+                                  ? '가입 후 같은 화면에서 바로 로그인할 수 있습니다.'
+                                  : '테스트 계정이 있으면 이메일과 비밀번호만 입력하면 됩니다.',
+                              style: const TextStyle(
+                                color: Color(0xFF7B8A90),
+                                fontSize: 13,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -450,13 +496,54 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _submitLogin() async {
+    final email = emailController.text.trim();
+    final password = passwordController.text;
+    String? nextEmailError;
+    String? nextPasswordError;
+
+    if (email.isEmpty) {
+      nextEmailError = '이메일을 입력해주세요.';
+    } else if (!email.contains('@')) {
+      nextEmailError = '올바른 이메일 형식을 입력해주세요.';
+    }
+    if (password.isEmpty) {
+      nextPasswordError = '비밀번호를 입력해주세요.';
+    }
+
+    if (nextEmailError != null || nextPasswordError != null) {
+      setState(() {
+        loginEmailError = nextEmailError;
+        loginPasswordError = nextPasswordError;
+      });
+      _triggerLoginShake();
+      return;
+    }
+
     final response = await widget.controller.login(
-      email: emailController.text.trim(),
-      password: passwordController.text,
+      email: email,
+      password: password,
       role: selectedRole,
     );
     if (!mounted) return;
-    _showMessage(response.message);
+    if (response.success) {
+      setState(() {
+        loginEmailError = null;
+        loginPasswordError = null;
+      });
+      return;
+    }
+
+    setState(() {
+      if (response.message.contains('이메일')) {
+        loginEmailError = response.message;
+        loginPasswordError = null;
+      } else if (response.message.contains('비밀번호')) {
+        loginPasswordError = response.message;
+      } else {
+        loginPasswordError = '이메일 또는 비밀번호를 확인해주세요.';
+      }
+    });
+    _triggerLoginShake();
   }
 
   Future<void> _submitRegister() async {
@@ -500,6 +587,10 @@ class _LoginPageState extends State<LoginPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
     );
+  }
+
+  void _triggerLoginShake() {
+    shakeController.forward(from: 0);
   }
 }
 
@@ -554,6 +645,8 @@ class _AuthTextField extends StatelessWidget {
     this.nextFocusNode,
     this.keyboardType,
     this.obscureText = false,
+    this.errorText,
+    this.onChanged,
   });
 
   final TextEditingController controller;
@@ -563,6 +656,8 @@ class _AuthTextField extends StatelessWidget {
   final FocusNode? nextFocusNode;
   final TextInputType? keyboardType;
   final bool obscureText;
+  final String? errorText;
+  final ValueChanged<String>? onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -573,6 +668,7 @@ class _AuthTextField extends StatelessWidget {
       textInputAction:
           nextFocusNode == null ? TextInputAction.done : TextInputAction.next,
       obscureText: obscureText,
+      onChanged: onChanged,
       onSubmitted: (_) {
         if (nextFocusNode != null) {
           nextFocusNode!.requestFocus();
@@ -596,6 +692,21 @@ class _AuthTextField extends StatelessWidget {
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: Color(0xFF0E7A66), width: 1.4),
+        ),
+        errorText: errorText,
+        errorMaxLines: 2,
+        errorStyle: const TextStyle(
+          color: Color(0xFFC43C35),
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Color(0xFFC43C35), width: 1.2),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Color(0xFFC43C35), width: 1.4),
         ),
       ),
     );
