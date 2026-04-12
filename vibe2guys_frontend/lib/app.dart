@@ -52,6 +52,7 @@ class AppController extends ChangeNotifier {
           : MockApiClient();
   bool _loading = false;
   int selectedIndex = 0;
+  bool showingMyPage = false;
 
   bool get loading => _loading;
   bool get isAuthenticated =>
@@ -94,11 +95,18 @@ class AppController extends ChangeNotifier {
   Future<void> logout() async {
     await api.logout();
     selectedIndex = 0;
+    showingMyPage = false;
     notifyListeners();
   }
 
   void setSelectedIndex(int index) {
     selectedIndex = index;
+    showingMyPage = false;
+    notifyListeners();
+  }
+
+  void openMyPage() {
+    showingMyPage = true;
     notifyListeners();
   }
 
@@ -750,61 +758,161 @@ class AppShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final role = controller.user!.role;
-    final labels = role == UserRole.student
+    final items = role == UserRole.student
         ? [
-            '대시보드',
-            '강의',
-            '콘텐츠',
-            '과제',
-            '팀 활동',
-            '마이페이지',
-            if (kShowDeveloperApi) 'API 규칙',
+            const _NavItem('대시보드', Icons.space_dashboard_rounded),
+            const _NavItem('강의', Icons.menu_book_rounded),
+            const _NavItem('콘텐츠', Icons.play_circle_outline_rounded),
+            const _NavItem('과제', Icons.assignment_rounded),
+            const _NavItem('팀 활동', Icons.groups_rounded),
+            if (kShowDeveloperApi) const _NavItem('API 규칙', Icons.code_rounded),
           ]
         : [
-            '교수자 대시보드',
-            '수강생 관리',
-            '강의 관리',
-            '팀 분석',
-            '마이페이지',
-            if (kShowDeveloperApi) 'API 규칙',
+            const _NavItem('교수자 대시보드', Icons.analytics_rounded),
+            const _NavItem('수강생 관리', Icons.school_rounded),
+            const _NavItem('강의 관리', Icons.edit_note_rounded),
+            const _NavItem('팀 분석', Icons.hub_rounded),
+            if (kShowDeveloperApi) const _NavItem('API 규칙', Icons.code_rounded),
           ];
-    final currentIndex = controller.selectedIndex >= labels.length
-        ? 0
-        : controller.selectedIndex;
+    final currentIndex =
+        controller.selectedIndex >= items.length ? 0 : controller.selectedIndex;
     return Scaffold(
       body: Row(
         children: [
-          NavigationRail(
-            selectedIndex: currentIndex,
-            labelType: NavigationRailLabelType.all,
-            onDestinationSelected: controller.setSelectedIndex,
-            leading: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: CircleAvatar(
-                backgroundColor: Colors.teal.shade700,
-                backgroundImage:
-                    _profileImageProvider(controller.user?.profileImageUrl),
-                child:
-                    _profileImageProvider(controller.user?.profileImageUrl) ==
-                            null
-                        ? Text(controller.user!.name.characters.first)
-                        : null,
+          Container(
+            width: 132,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFF9FFFC), Color(0xFFF0F8FF)],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
               ),
+              border: Border(
+                right: BorderSide(
+                  color: const Color(0xFFD7E7E2).withValues(alpha: 0.9),
+                ),
+              ),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x120A3A33),
+                  blurRadius: 20,
+                  offset: Offset(6, 0),
+                ),
+              ],
             ),
-            trailing: IconButton(
-              onPressed: () => controller.logout(),
-              icon: const Icon(Icons.logout),
-              tooltip: '로그아웃',
-            ),
-            destinations: labels
-                .map(
-                  (label) => NavigationRailDestination(
-                    icon: const Icon(Icons.radio_button_unchecked),
-                    selectedIcon: const Icon(Icons.check_circle),
-                    label: Text(label),
+            child: NavigationRail(
+              selectedIndex: currentIndex,
+              minWidth: 92,
+              groupAlignment: -0.85,
+              backgroundColor: Colors.transparent,
+              indicatorColor: const Color(0xFFDDF6ED),
+              selectedIconTheme: const IconThemeData(
+                color: Color(0xFF0E7A66),
+                size: 24,
+              ),
+              unselectedIconTheme: const IconThemeData(
+                color: Color(0xFF64757B),
+                size: 22,
+              ),
+              selectedLabelTextStyle: const TextStyle(
+                color: Color(0xFF0E5C63),
+                fontWeight: FontWeight.w800,
+                fontSize: 13,
+              ),
+              unselectedLabelTextStyle: const TextStyle(
+                color: Color(0xFF6A7A80),
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+              labelType: NavigationRailLabelType.all,
+              onDestinationSelected: controller.setSelectedIndex,
+              leading: Padding(
+                padding: const EdgeInsets.fromLTRB(10, 12, 10, 18),
+                child: InkWell(
+                  onTap: controller.openMyPage,
+                  borderRadius: BorderRadius.circular(22),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: controller.showingMyPage
+                          ? const Color(0xFFE7F7F0)
+                          : Colors.white.withValues(alpha: 0.86),
+                      borderRadius: BorderRadius.circular(22),
+                      border: Border.all(
+                        color: controller.showingMyPage
+                            ? const Color(0xFF0E7A66)
+                            : const Color(0xFFD7E7E2),
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        CircleAvatar(
+                          radius: 22,
+                          backgroundColor: Colors.teal.shade700,
+                          backgroundImage: _profileImageProvider(
+                              controller.user?.profileImageUrl),
+                          child: _profileImageProvider(
+                                      controller.user?.profileImageUrl) ==
+                                  null
+                              ? Text(
+                                  controller.user!.name.characters.first,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                )
+                              : null,
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          controller.user!.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF14353C),
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        const Text(
+                          '내 프로필',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF0E7A66),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                )
-                .toList(),
+                ),
+              ),
+              trailing: Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.92),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFD7E7E2)),
+                ),
+                child: IconButton(
+                  onPressed: () => controller.logout(),
+                  icon: const Icon(Icons.logout_rounded),
+                  tooltip: '로그아웃',
+                ),
+              ),
+              destinations: items
+                  .map(
+                    (item) => NavigationRailDestination(
+                      icon: Icon(item.icon),
+                      selectedIcon: Icon(item.icon),
+                      label: Text(item.label, textAlign: TextAlign.center),
+                    ),
+                  )
+                  .toList(),
+            ),
           ),
           const VerticalDivider(width: 1),
           Expanded(
@@ -828,6 +936,9 @@ class AppShell extends StatelessWidget {
   }
 
   Widget _buildBody(UserRole role, int selectedIndex) {
+    if (controller.showingMyPage) {
+      return MyPage(controller: controller);
+    }
     if (role == UserRole.student) {
       switch (selectedIndex) {
         case 0:
@@ -841,8 +952,6 @@ class AppShell extends StatelessWidget {
         case 4:
           return StudentTeamPage(controller: controller);
         case 5:
-          return MyPage(controller: controller);
-        case 6:
           if (kShowDeveloperApi) return const ApiRulesPage();
           return StudentDashboardPage(controller: controller);
         default:
@@ -859,8 +968,6 @@ class AppShell extends StatelessWidget {
       case 3:
         return InstructorTeamAnalysisPage(controller: controller);
       case 4:
-        return MyPage(controller: controller);
-      case 5:
         if (kShowDeveloperApi) return const ApiRulesPage();
         return InstructorDashboardPage(controller: controller);
       default:
@@ -919,6 +1026,10 @@ class StudentDashboardPage extends StatelessWidget {
                   value: _displayText(
                     dashboard['riskLevel'],
                     emptyMessage: '아직 없음',
+                  ),
+                  tone: _statusToneFor(
+                    '위험도',
+                    _displayText(dashboard['riskLevel'], emptyMessage: '아직 없음'),
                   ),
                 ),
               ],
@@ -1648,11 +1759,7 @@ class _InstructorStudentsPageState extends State<InstructorStudentsPage> {
       memoController.text = _displayText(student['memo'], emptyMessage: '');
     }
     final riskLevel = _displayText(student['riskLevel'], emptyMessage: 'LOW');
-    final riskColor = switch (riskLevel) {
-      'HIGH' => const Color(0xFFC43C35),
-      'MEDIUM' => const Color(0xFFB7791F),
-      _ => const Color(0xFF0E7A66),
-    };
+    final riskTone = _statusToneFor('위험도', riskLevel);
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -1687,13 +1794,16 @@ class _InstructorStudentsPageState extends State<InstructorStudentsPage> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: riskColor.withValues(alpha: 0.12),
+                  color: riskTone.background,
+                  border: Border.all(color: riskTone.border),
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
                   '위험도 $riskLevel',
-                  style:
-                      TextStyle(color: riskColor, fontWeight: FontWeight.w700),
+                  style: TextStyle(
+                    color: riskTone.foreground,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ],
@@ -3087,22 +3197,29 @@ class ApiRulesPage extends StatelessWidget {
 }
 
 class MetricCard extends StatelessWidget {
-  const MetricCard({super.key, required this.label, required this.value});
+  const MetricCard({
+    super.key,
+    required this.label,
+    required this.value,
+    this.tone,
+  });
   final String label;
   final String value;
+  final _StatusTone? tone;
 
   @override
   Widget build(BuildContext context) {
+    final resolvedTone = tone ?? _StatusTone.neutral();
     return Container(
       width: 190,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: resolvedTone.background,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFDCE8E4)),
+        border: Border.all(color: resolvedTone.border),
         boxShadow: [
           BoxShadow(
-            color: Colors.teal.withValues(alpha: 0.08),
+            color: resolvedTone.border.withValues(alpha: 0.18),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -3111,12 +3228,19 @@ class MetricCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label,
-              style: const TextStyle(fontSize: 13, color: Colors.black54)),
+          Text(
+            label,
+            style: TextStyle(fontSize: 13, color: resolvedTone.foreground),
+          ),
           const SizedBox(height: 8),
-          Text(value,
-              style:
-                  const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+              color: resolvedTone.foreground,
+            ),
+          ),
         ],
       ),
     );
@@ -3343,21 +3467,76 @@ class _StatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tone = _statusToneFor(label, value);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFFEAF7F3),
+        color: tone.background,
+        border: Border.all(color: tone.border),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
         '$label $value',
-        style: const TextStyle(
-          color: Color(0xFF0E5C63),
+        style: TextStyle(
+          color: tone.foreground,
           fontWeight: FontWeight.w700,
         ),
       ),
     );
   }
+}
+
+class _NavItem {
+  const _NavItem(this.label, this.icon);
+
+  final String label;
+  final IconData icon;
+}
+
+class _StatusTone {
+  const _StatusTone({
+    required this.background,
+    required this.border,
+    required this.foreground,
+  });
+
+  final Color background;
+  final Color border;
+  final Color foreground;
+
+  factory _StatusTone.neutral() {
+    return const _StatusTone(
+      background: Color(0xFFF4FAF8),
+      border: Color(0xFFD7E7E2),
+      foreground: Color(0xFF31505A),
+    );
+  }
+}
+
+_StatusTone _statusToneFor(String label, String value) {
+  final normalized = value.trim().toUpperCase();
+  if (label.contains('위험') || normalized == 'HIGH' || value.contains('주의')) {
+    return const _StatusTone(
+      background: Color(0xFFFDEDEA),
+      border: Color(0xFFF3B4AA),
+      foreground: Color(0xFFB9382A),
+    );
+  }
+  if (normalized == 'MEDIUM' || value.contains('관찰') || value.contains('비공개')) {
+    return const _StatusTone(
+      background: Color(0xFFFFF6E6),
+      border: Color(0xFFF0CF88),
+      foreground: Color(0xFF9A6A00),
+    );
+  }
+  if (normalized == 'LOW' || value.contains('안정') || value.contains('공개')) {
+    return const _StatusTone(
+      background: Color(0xFFEAF7F0),
+      border: Color(0xFFA8D8BC),
+      foreground: Color(0xFF1F7A46),
+    );
+  }
+  return _StatusTone.neutral();
 }
 
 ImageProvider<Object>? _profileImageProvider(String? url) {
