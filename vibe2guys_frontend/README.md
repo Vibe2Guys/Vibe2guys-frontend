@@ -6,6 +6,7 @@ Role-based LMS frontend MVP for `STUDENT` and `INSTRUCTOR`, aligned to shared AP
 - Success: `{"success": true, "message": "...", "data": ...}`
 - Error: `{"success": false, "message": "...", "errorCode": "..."}`
 - Auth: `Authorization: Bearer {accessToken}`
+- Public auth: `POST /api/v1/auth/register`, `POST /api/v1/auth/login`
 
 ## Run
 
@@ -22,7 +23,8 @@ Switch to real backend with `dart-define`:
 ```bash
 flutter run -d chrome \
   --dart-define=USE_REAL_API=true \
-  --dart-define=API_BASE_URL=http://localhost:8080/api/v1
+  --web-port 3000 \
+  --dart-define=API_BASE_URL=http://localhost:18080/api/v1
 ```
 
 ## API Layer

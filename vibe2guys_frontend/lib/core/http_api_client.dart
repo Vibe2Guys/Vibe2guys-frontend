@@ -35,6 +35,31 @@ class HttpApiClient implements ApiClient {
   }
 
   @override
+  Future<ApiResponse<Map<String, dynamic>>> register({
+    required String name,
+    required String email,
+    required String password,
+    required UserRole role,
+  }) async {
+    final response = await _post(
+      '/auth/register',
+      body: {
+        'name': name,
+        'email': email,
+        'password': password,
+        'role': role.apiValue,
+      },
+      withAuth: false,
+    );
+    return ApiResponse(
+      success: response.success,
+      message: response.message,
+      data: _extractMap(response.data),
+      errorCode: response.errorCode,
+    );
+  }
+
+  @override
   Future<ApiResponse<Map<String, dynamic>>> login({
     required String email,
     required String password,
@@ -99,8 +124,78 @@ class HttpApiClient implements ApiClient {
       _getList('/courses/my');
 
   @override
+  Future<ApiResponse<Map<String, dynamic>>> createCourse({
+    required String title,
+    required String description,
+    required String thumbnailUrl,
+    required String startDate,
+    required String endDate,
+    required bool isSequentialRelease,
+  }) {
+    return _postMap(
+      '/courses',
+      body: {
+        'title': title,
+        'description': description,
+        'thumbnailUrl': thumbnailUrl,
+        'startDate': startDate,
+        'endDate': endDate,
+        'isSequentialRelease': isSequentialRelease,
+      },
+    );
+  }
+
+  @override
   Future<ApiResponse<Map<String, dynamic>>> getCourseDetail(int courseId) =>
       _getMap('/courses/$courseId');
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> createWeek({
+    required int courseId,
+    required int weekNumber,
+    required String title,
+    required String openAt,
+  }) {
+    return _postMap(
+      '/courses/$courseId/weeks',
+      body: {
+        'weekNumber': weekNumber,
+        'title': title,
+        'openAt': openAt,
+      },
+    );
+  }
+
+  @override
+  Future<ApiResponse<List<Map<String, dynamic>>>> getWeekContents(int courseId, int weekId) =>
+      _getList('/courses/$courseId/weeks/$weekId/contents');
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> createContent({
+    required int weekId,
+    required String type,
+    required String title,
+    required String description,
+    String? videoUrl,
+    String? documentUrl,
+    int? durationSeconds,
+    String? scheduledAt,
+    required String openAt,
+  }) {
+    return _postMap(
+      '/weeks/$weekId/contents',
+      body: {
+        'type': type,
+        'title': title,
+        'description': description,
+        'videoUrl': videoUrl,
+        'documentUrl': documentUrl,
+        'durationSeconds': durationSeconds,
+        'scheduledAt': scheduledAt,
+        'openAt': openAt,
+      },
+    );
+  }
 
   @override
   Future<ApiResponse<List<Map<String, dynamic>>>> getCourseAssignments(int courseId) =>
@@ -188,6 +283,21 @@ class HttpApiClient implements ApiClient {
   }
 
   @override
+  Future<ApiResponse<List<Map<String, dynamic>>>> getCourseTeams(int courseId) =>
+      _getList('/courses/$courseId/teams');
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> autoGroupTeams({
+    required int courseId,
+    required int teamSize,
+  }) {
+    return _postMap(
+      '/courses/$courseId/teams/auto-grouping',
+      body: {'teamSize': teamSize},
+    );
+  }
+
+  @override
   Future<ApiResponse<Map<String, dynamic>>> getTeamDetail(int teamId) async {
     final response = await _get('/teams/$teamId');
     final data = _extractMap(response.data);
@@ -201,6 +311,14 @@ class HttpApiClient implements ApiClient {
       errorCode: response.errorCode,
     );
   }
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> getTeamAnalytics(int teamId) =>
+      _getMap('/teams/$teamId/analytics');
+
+  @override
+  Future<ApiResponse<List<Map<String, dynamic>>>> getTeamMemberContributions(int teamId) =>
+      _getList('/teams/$teamId/members/contributions');
 
   @override
   Future<ApiResponse<Map<String, dynamic>>> getTeamChatRoom(int teamId) =>
