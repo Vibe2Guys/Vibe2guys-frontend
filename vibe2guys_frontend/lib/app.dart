@@ -46,14 +46,16 @@ class _LearnSightAppState extends State<LearnSightApp> {
 }
 
 class AppController extends ChangeNotifier {
-  final ApiClient api = const bool.fromEnvironment('USE_REAL_API', defaultValue: false)
-      ? HttpApiClient()
-      : MockApiClient();
+  final ApiClient api =
+      const bool.fromEnvironment('USE_REAL_API', defaultValue: false)
+          ? HttpApiClient()
+          : MockApiClient();
   bool _loading = false;
   int selectedIndex = 0;
 
   bool get loading => _loading;
-  bool get isAuthenticated => api.currentUser != null && api.accessToken != null;
+  bool get isAuthenticated =>
+      api.currentUser != null && api.accessToken != null;
   AppUser? get user => api.currentUser;
 
   Future<ApiResponse<Map<String, dynamic>>> register({
@@ -82,7 +84,8 @@ class AppController extends ChangeNotifier {
   }) async {
     _loading = true;
     notifyListeners();
-    final response = await api.login(email: email, password: password, role: role);
+    final response =
+        await api.login(email: email, password: password, role: role);
     _loading = false;
     notifyListeners();
     return response;
@@ -98,6 +101,10 @@ class AppController extends ChangeNotifier {
     selectedIndex = index;
     notifyListeners();
   }
+
+  void refreshUser() {
+    notifyListeners();
+  }
 }
 
 enum AuthMode { login, register }
@@ -110,11 +117,13 @@ class LoginPage extends StatefulWidget {
   State<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMixin {
+class _LoginPageState extends State<LoginPage>
+    with SingleTickerProviderStateMixin {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  final TextEditingController confirmPasswordController = TextEditingController();
+  final TextEditingController confirmPasswordController =
+      TextEditingController();
   final FocusNode nameFocusNode = FocusNode();
   final FocusNode emailFocusNode = FocusNode();
   final FocusNode passwordFocusNode = FocusNode();
@@ -185,7 +194,8 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                     child: Container(
                       padding: const EdgeInsets.fromLTRB(36, 40, 36, 40),
                       decoration: const BoxDecoration(
-                        borderRadius: BorderRadius.horizontal(left: Radius.circular(28)),
+                        borderRadius:
+                            BorderRadius.horizontal(left: Radius.circular(28)),
                         gradient: LinearGradient(
                           colors: [Color(0xFF0B2435), Color(0xFF0E5C63)],
                           begin: Alignment.topLeft,
@@ -197,7 +207,8 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 8),
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(999),
@@ -250,7 +261,12 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                         builder: (context, child) {
                           final progress = shakeController.value;
                           final offset = progress < 1
-                              ? (1 - progress) * 10 * (progress < 0.25 || (progress >= 0.5 && progress < 0.75) ? 1 : -1)
+                              ? (1 - progress) *
+                                  10 *
+                                  (progress < 0.25 ||
+                                          (progress >= 0.5 && progress < 0.75)
+                                      ? 1
+                                      : -1)
                               : 0.0;
                           return Transform.translate(
                             offset: Offset(offset, 0),
@@ -351,13 +367,16 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                                   isRegister ? confirmPasswordFocusNode : null,
                               controller: passwordController,
                               label: '비밀번호',
-                              hintText: isRegister ? '8자 이상 비밀번호' : '비밀번호를 입력하세요',
+                              hintText:
+                                  isRegister ? '8자 이상 비밀번호' : '비밀번호를 입력하세요',
                               obscureText: true,
-                              errorText: !isRegister ? loginPasswordError : null,
+                              errorText:
+                                  !isRegister ? loginPasswordError : null,
                               onChanged: !isRegister
                                   ? (_) {
                                       if (loginPasswordError != null) {
-                                        setState(() => loginPasswordError = null);
+                                        setState(
+                                            () => loginPasswordError = null);
                                       }
                                     }
                                   : null,
@@ -400,14 +419,16 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                                         value: role,
                                         label: SizedBox(
                                           width: 78,
-                                          child: Center(child: Text(role.label)),
+                                          child:
+                                              Center(child: Text(role.label)),
                                         ),
                                       ),
                                     )
                                     .toList(),
                                 selected: {selectedRole},
                                 onSelectionChanged: (selection) {
-                                  setState(() => selectedRole = selection.first);
+                                  setState(
+                                      () => selectedRole = selection.first);
                                 },
                               ),
                             ] else ...[
@@ -438,14 +459,16 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                                         value: role,
                                         label: SizedBox(
                                           width: 78,
-                                          child: Center(child: Text(role.label)),
+                                          child:
+                                              Center(child: Text(role.label)),
                                         ),
                                       ),
                                     )
                                     .toList(),
                                 selected: {registerRole},
                                 onSelectionChanged: (selection) {
-                                  setState(() => registerRole = selection.first);
+                                  setState(
+                                      () => registerRole = selection.first);
                                 },
                               ),
                             ],
@@ -454,19 +477,23 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                               width: double.infinity,
                               child: FilledButton(
                                 style: FilledButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(vertical: 18),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 18),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(16),
                                   ),
                                 ),
                                 onPressed: widget.controller.loading
                                     ? null
-                                    : () => isRegister ? _submitRegister() : _submitLogin(),
+                                    : () => isRegister
+                                        ? _submitRegister()
+                                        : _submitLogin(),
                                 child: widget.controller.loading
                                     ? const SizedBox(
                                         height: 20,
                                         width: 20,
-                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                        child: CircularProgressIndicator(
+                                            strokeWidth: 2),
                                       )
                                     : Text(isRegister ? '회원가입' : '로그인'),
                               ),
@@ -552,7 +579,10 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     final password = passwordController.text;
     final confirmPassword = confirmPasswordController.text;
 
-    if (name.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+    if (name.isEmpty ||
+        email.isEmpty ||
+        password.isEmpty ||
+        confirmPassword.isEmpty) {
       _showMessage('모든 항목을 입력해주세요.');
       return;
     }
@@ -727,16 +757,20 @@ class AppShell extends StatelessWidget {
             '콘텐츠',
             '과제',
             '팀 활동',
+            '마이페이지',
             if (kShowDeveloperApi) 'API 규칙',
           ]
         : [
             '교수자 대시보드',
-            '위험 학생',
+            '수강생 관리',
             '강의 관리',
             '팀 분석',
+            '마이페이지',
             if (kShowDeveloperApi) 'API 규칙',
           ];
-    final currentIndex = controller.selectedIndex >= labels.length ? 0 : controller.selectedIndex;
+    final currentIndex = controller.selectedIndex >= labels.length
+        ? 0
+        : controller.selectedIndex;
     return Scaffold(
       body: Row(
         children: [
@@ -748,7 +782,13 @@ class AppShell extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: CircleAvatar(
                 backgroundColor: Colors.teal.shade700,
-                child: Text(controller.user!.name.characters.first),
+                backgroundImage:
+                    _profileImageProvider(controller.user?.profileImageUrl),
+                child:
+                    _profileImageProvider(controller.user?.profileImageUrl) ==
+                            null
+                        ? Text(controller.user!.name.characters.first)
+                        : null,
               ),
             ),
             trailing: IconButton(
@@ -801,6 +841,8 @@ class AppShell extends StatelessWidget {
         case 4:
           return StudentTeamPage(controller: controller);
         case 5:
+          return MyPage(controller: controller);
+        case 6:
           if (kShowDeveloperApi) return const ApiRulesPage();
           return StudentDashboardPage(controller: controller);
         default:
@@ -817,6 +859,8 @@ class AppShell extends StatelessWidget {
       case 3:
         return InstructorTeamAnalysisPage(controller: controller);
       case 4:
+        return MyPage(controller: controller);
+      case 5:
         if (kShowDeveloperApi) return const ApiRulesPage();
         return InstructorDashboardPage(controller: controller);
       default:
@@ -838,12 +882,14 @@ class StudentDashboardPage extends StatelessWidget {
         controller.api.getRecommendations(controller.user!.userId),
       ]),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+        if (!snapshot.hasData)
+          return const Center(child: CircularProgressIndicator());
         final responses = snapshot.data!;
         final dashboard = responses[0].data as Map<String, dynamic>;
         final report = responses[1].data as Map<String, dynamic>;
         final recommendations = responses[2].data as Map<String, dynamic>;
-        final recommendedActions = _asStringList(recommendations['recommendedActions']);
+        final recommendedActions =
+            _asStringList(recommendations['recommendedActions']);
 
         return ListView(
           children: [
@@ -859,9 +905,15 @@ class StudentDashboardPage extends StatelessWidget {
               spacing: 12,
               runSpacing: 12,
               children: [
-                MetricCard(label: '출석률', value: '${_asInt(dashboard['attendanceRate'])}%'),
-                MetricCard(label: '진도율', value: '${_asInt(dashboard['progressRate'])}%'),
-                MetricCard(label: '이해도', value: '${_asInt(dashboard['understandingScore'])}'),
+                MetricCard(
+                    label: '출석률',
+                    value: '${_asInt(dashboard['attendanceRate'])}%'),
+                MetricCard(
+                    label: '진도율',
+                    value: '${_asInt(dashboard['progressRate'])}%'),
+                MetricCard(
+                    label: '이해도',
+                    value: '${_asInt(dashboard['understandingScore'])}'),
                 MetricCard(
                   label: '위험도',
                   value: _displayText(
@@ -902,7 +954,8 @@ class StudentCoursesPage extends StatelessWidget {
     return FutureBuilder<ApiResponse<List<Map<String, dynamic>>>>(
       future: controller.api.getMyCourses(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+        if (!snapshot.hasData)
+          return const Center(child: CircularProgressIndicator());
         final courses = snapshot.data!.data ?? [];
         return ListView(
           children: [
@@ -952,13 +1005,16 @@ class _StudentContentPageState extends State<StudentContentPage> {
     return FutureBuilder<ApiResponse<Map<String, dynamic>>>(
       future: widget.controller.api.getContentDetail(5001),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+        if (!snapshot.hasData)
+          return const Center(child: CircularProgressIndicator());
         final content = snapshot.data!.data!;
-        final myProgress = (content['myProgress'] as Map<String, dynamic>?) ?? const {};
+        final myProgress =
+            (content['myProgress'] as Map<String, dynamic>?) ?? const {};
         final watchedSeconds = _asInt(myProgress['lastPositionSeconds']);
         final durationSeconds = _asInt(content['durationSeconds']);
         final progressRate = _asInt(myProgress['progressRate']);
-        final isCompleted = myProgress['isCompleted'] == true || progressRate >= 100;
+        final isCompleted =
+            myProgress['isCompleted'] == true || progressRate >= 100;
         return ListView(
           children: [
             const DashboardHeroCard(
@@ -987,12 +1043,15 @@ class _StudentContentPageState extends State<StudentContentPage> {
                     children: [
                       const Text(
                         '현재 시청 상태',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w700),
                       ),
                       Text(
                         isCompleted ? '시청 완료' : '시청 중',
                         style: TextStyle(
-                          color: isCompleted ? const Color(0xFF0E7A66) : const Color(0xFF4A6570),
+                          color: isCompleted
+                              ? const Color(0xFF0E7A66)
+                              : const Color(0xFF4A6570),
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -1005,7 +1064,8 @@ class _StudentContentPageState extends State<StudentContentPage> {
                       minHeight: 10,
                       value: (progressRate.clamp(0, 100)) / 100,
                       backgroundColor: const Color(0xFFE4EFEC),
-                      valueColor: const AlwaysStoppedAnimation(Color(0xFF0E7A66)),
+                      valueColor:
+                          const AlwaysStoppedAnimation(Color(0xFF0E7A66)),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -1052,7 +1112,8 @@ class _StudentAssignmentPageState extends State<StudentAssignmentPage> {
     return FutureBuilder<ApiResponse<Map<String, dynamic>>>(
       future: widget.controller.api.getAssignmentDetail(7001),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+        if (!snapshot.hasData)
+          return const Center(child: CircularProgressIndicator());
         final assignment = snapshot.data!.data!;
         return ListView(
           children: [
@@ -1062,7 +1123,8 @@ class _StudentAssignmentPageState extends State<StudentAssignmentPage> {
             ),
             const SizedBox(height: 16),
             InfoCard(
-              title: _displayText(assignment['title'], emptyMessage: '과제 제목 미정'),
+              title:
+                  _displayText(assignment['title'], emptyMessage: '과제 제목 미정'),
               content: _displayText(
                 assignment['description'],
                 emptyMessage: '과제 설명이 아직 없습니다.',
@@ -1115,7 +1177,8 @@ class StudentTeamPage extends StatelessWidget {
         controller.api.getChatMessages(4001),
       ]),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+        if (!snapshot.hasData)
+          return const Center(child: CircularProgressIndicator());
         final responses = snapshot.data!;
         final team = responses[0].data as Map<String, dynamic>;
         final detail = responses[1].data as Map<String, dynamic>;
@@ -1154,7 +1217,8 @@ class StudentTeamPage extends StatelessWidget {
               ...messages.map(
                 (message) => Card(
                   child: ListTile(
-                    title: Text(_displayText(message['senderName'], emptyMessage: '알 수 없음')),
+                    title: Text(_displayText(message['senderName'],
+                        emptyMessage: '알 수 없음')),
                     subtitle: Text(_displayText(message['message'])),
                     trailing: Text(_timeLabel(message['sentAt'])),
                   ),
@@ -1181,7 +1245,8 @@ class InstructorDashboardPage extends StatelessWidget {
     return FutureBuilder<ApiResponse<Map<String, dynamic>>>(
       future: controller.api.getInstructorDashboard(101),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+        if (!snapshot.hasData)
+          return const Center(child: CircularProgressIndicator());
         final data = snapshot.data!.data!;
         return ListView(
           children: [
@@ -1194,9 +1259,14 @@ class InstructorDashboardPage extends StatelessWidget {
               spacing: 12,
               runSpacing: 12,
               children: [
-                MetricCard(label: '수강생', value: '${_asInt(data['studentCount'])}'),
-                MetricCard(label: '평균 출석', value: '${_asInt(data['averageAttendanceRate'])}%'),
-                MetricCard(label: '고위험 학생', value: '${_asInt(data['highRiskStudentCount'])}'),
+                MetricCard(
+                    label: '수강생', value: '${_asInt(data['studentCount'])}'),
+                MetricCard(
+                    label: '평균 출석',
+                    value: '${_asInt(data['averageAttendanceRate'])}%'),
+                MetricCard(
+                    label: '고위험 학생',
+                    value: '${_asInt(data['highRiskStudentCount'])}'),
                 MetricCard(
                   label: '저이해 학생',
                   value: '${_asInt(data['lowUnderstandingStudentCount'])}',
@@ -1212,100 +1282,300 @@ class InstructorDashboardPage extends StatelessWidget {
   }
 }
 
-class InstructorStudentsPage extends StatelessWidget {
+class InstructorStudentsPage extends StatefulWidget {
   const InstructorStudentsPage({super.key, required this.controller});
   final AppController controller;
 
   @override
+  State<InstructorStudentsPage> createState() => _InstructorStudentsPageState();
+}
+
+class _InstructorStudentsPageState extends State<InstructorStudentsPage> {
+  final Map<int, TextEditingController> memoControllers = {};
+  final Set<int> savingStudentIds = <int>{};
+  int refreshSeed = 0;
+  int? selectedCourseId;
+
+  @override
+  void dispose() {
+    for (final controller in memoControllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<ApiResponse<dynamic>>>(
+      key: ValueKey(refreshSeed),
       future: Future.wait<ApiResponse<dynamic>>([
-        controller.api.getRiskStudents(101),
-        controller.api.getLowUnderstandingStudents(101),
-        controller.api.getInterventions(101),
+        widget.controller.api.getMyCourses(),
+        if (selectedCourseId != null)
+          widget.controller.api.getInstructorDashboard(selectedCourseId!),
+        if (selectedCourseId != null)
+          widget.controller.api.getInterventions(selectedCourseId!),
       ]),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-        final responses = snapshot.data!;
-        final risk = responses[0].data as List<Map<String, dynamic>>;
-        final low = responses[1].data as List<Map<String, dynamic>>;
-        final interventions = responses[2].data as List<Map<String, dynamic>>;
+        if (!snapshot.hasData)
+          return const Center(child: CircularProgressIndicator());
+        final courses =
+            snapshot.data!.first.data as List<Map<String, dynamic>>? ?? [];
+        if (selectedCourseId == null && courses.isNotEmpty) {
+          selectedCourseId = _asInt(courses.first['courseId']);
+        }
+        final dashboard = snapshot.data!.length > 1
+            ? snapshot.data![1].data as Map<String, dynamic>? ?? {}
+            : const <String, dynamic>{};
+        final interventions = snapshot.data!.length > 2
+            ? snapshot.data![2].data as List<Map<String, dynamic>>? ?? []
+            : const <Map<String, dynamic>>[];
+
         return ListView(
           children: [
             const DashboardHeroCard(
-              title: '위험/저이해 학생',
-              subtitle: '우선 확인이 필요한 학생을 영역별로 나눠 보여줍니다.',
+              title: '수강생 관리',
+              subtitle: '담당 강의 수강생을 모아 보고, 상태를 빠르게 확인하고, 개인 메모를 남길 수 있습니다.',
             ),
             const SizedBox(height: 16),
             SectionPanel(
-              title: '위험 학생',
-              child: risk.isEmpty
+              title: '강의 선택',
+              child: courses.isEmpty
                   ? const EmptyStateCard(
-                      title: '위험 학생이 없습니다',
-                      description: '현재 기준으로 높은 위험도로 분류된 학생이 없습니다.',
+                      title: '담당 강의가 없습니다',
+                      description: '강의가 등록되면 이 화면에서 수강생 현황을 볼 수 있습니다.',
                     )
-                  : Column(
-                      children: risk
+                  : Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: courses
                           .map(
-                            (student) => ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              title: Text(_displayText(student['studentName'])),
-                              subtitle: Text(
-                                '위험도 ${_asInt(student['riskScore'])} (${_displayText(student['riskLevel'])})',
+                            (course) => SizedBox(
+                              width: 280,
+                              child: _SelectionCard(
+                                title: _displayText(course['title']),
+                                description: _displayText(
+                                  course['description'],
+                                  emptyMessage: '강의 설명이 없습니다.',
+                                ),
+                                selected: _asInt(course['courseId']) ==
+                                    selectedCourseId,
+                                onTap: () {
+                                  setState(() {
+                                    selectedCourseId =
+                                        _asInt(course['courseId']);
+                                  });
+                                },
                               ),
                             ),
                           )
                           .toList(),
                     ),
             ),
-            const SizedBox(height: 12),
-            SectionPanel(
-              title: '저이해 학생',
-              child: low.isEmpty
-                  ? const EmptyStateCard(
-                      title: '저이해 학생이 없습니다',
-                      description: '현재 기준으로 별도 확인이 필요한 저이해 학생이 없습니다.',
-                    )
-                  : Column(
-                      children: low
-                          .map(
-                            (student) => ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              title: Text(_displayText(student['studentName'])),
-                              subtitle: Text('점수 ${_asInt(student['understandingScore'])}'),
-                            ),
-                          )
-                          .toList(),
-                    ),
-            ),
-            const SizedBox(height: 12),
-            SectionPanel(
-              title: '개입 추천',
-              child: interventions.isEmpty
-                  ? const EmptyStateCard(
-                      title: '개입 추천이 없습니다',
-                      description: '학생 데이터가 더 쌓이면 개입 추천이 표시됩니다.',
-                    )
-                  : Column(
-                      children: interventions
-                          .map(
-                            (item) => ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              title: Text(_displayText(item['studentName'])),
-                              subtitle: Text(_displayText(item['recommendedAction'])),
-                            ),
-                          )
-                          .toList(),
-                    ),
-            ),
-            const SizedBox(height: 10),
-            EndpointChip(label: 'GET ${Endpoints.riskStudents(101)}'),
-            EndpointChip(label: 'GET ${Endpoints.lowUnderstandingStudents(101)}'),
-            EndpointChip(label: 'GET ${Endpoints.interventions(101)}'),
+            const SizedBox(height: 16),
+            if (selectedCourseId != null) ...[
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  MetricCard(
+                      label: '수강생',
+                      value: '${_asInt(dashboard['studentCount'])}명'),
+                  MetricCard(
+                      label: '평균 출석',
+                      value: '${_asInt(dashboard['averageAttendanceRate'])}%'),
+                  MetricCard(
+                      label: '고위험',
+                      value: '${_asInt(dashboard['highRiskStudentCount'])}명'),
+                  MetricCard(
+                      label: '저이해',
+                      value:
+                          '${_asInt(dashboard['lowUnderstandingStudentCount'])}명'),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _buildStudentList(selectedCourseId!),
+              const SizedBox(height: 12),
+              SectionPanel(
+                title: '개입 추천',
+                child: interventions.isEmpty
+                    ? const EmptyStateCard(
+                        title: '개입 추천이 없습니다',
+                        description: '학생 데이터가 쌓이면 추천 액션이 표시됩니다.',
+                      )
+                    : Column(
+                        children: interventions
+                            .map(
+                              (item) => ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                title: Text(_displayText(item['studentName'])),
+                                subtitle: Text(
+                                    _displayText(item['recommendedAction'])),
+                              ),
+                            )
+                            .toList(),
+                      ),
+              ),
+              const SizedBox(height: 10),
+              EndpointChip(
+                  label: 'GET ${Endpoints.courseStudents(selectedCourseId!)}'),
+              EndpointChip(
+                  label:
+                      'PATCH ${Endpoints.courseStudentMemo(selectedCourseId!, 1)}'),
+            ],
           ],
         );
       },
     );
+  }
+
+  Widget _buildStudentList(int courseId) {
+    return FutureBuilder<ApiResponse<List<Map<String, dynamic>>>>(
+      future: widget.controller.api.getCourseStudents(courseId),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData)
+          return const Center(child: CircularProgressIndicator());
+        final students = snapshot.data!.data ?? [];
+        if (students.isEmpty) {
+          return const SectionPanel(
+            title: '수강생 현황',
+            child: EmptyStateCard(
+              title: '수강생이 없습니다',
+              description: '학생이 등록되면 학습 상태와 메모를 확인할 수 있습니다.',
+            ),
+          );
+        }
+        return SectionPanel(
+          title: '수강생 현황',
+          child: Column(
+            children: students
+                .map((student) => _buildStudentCard(courseId, student))
+                .toList(),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildStudentCard(int courseId, Map<String, dynamic> student) {
+    final studentId = _asInt(student['userId']);
+    final memoController = memoControllers.putIfAbsent(
+      studentId,
+      () => TextEditingController(
+          text: _displayText(student['memo'], emptyMessage: '')),
+    );
+    if (memoController.text.trim().isEmpty &&
+        _displayText(student['memo'], emptyMessage: '').isNotEmpty) {
+      memoController.text = _displayText(student['memo'], emptyMessage: '');
+    }
+    final riskLevel = _displayText(student['riskLevel'], emptyMessage: 'LOW');
+    final riskColor = switch (riskLevel) {
+      'HIGH' => const Color(0xFFC43C35),
+      'MEDIUM' => const Color(0xFFB7791F),
+      _ => const Color(0xFF0E7A66),
+    };
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9FCFB),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFDCE8E4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _displayText(student['name'], emptyMessage: '이름 없음'),
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _displayText(student['email'], emptyMessage: '이메일 정보 없음'),
+                      style: const TextStyle(color: Color(0xFF66777D)),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: riskColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  '위험도 $riskLevel',
+                  style:
+                      TextStyle(color: riskColor, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              _StatusChip(
+                  label: '진도', value: '${_asInt(student['progressRate'])}%'),
+              _StatusChip(
+                  label: '출석', value: '${_asInt(student['attendanceRate'])}%'),
+              _StatusChip(
+                  label: '이해도',
+                  value: '${_asInt(student['understandingScore'])}'),
+              _StatusChip(
+                  label: '상태', value: _displayText(student['statusSummary'])),
+            ],
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: memoController,
+            maxLines: 3,
+            decoration: const InputDecoration(
+              labelText: '교수자 메모',
+              hintText: '학생 상태나 후속 조치를 기록하세요',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerRight,
+            child: FilledButton.tonal(
+              onPressed: savingStudentIds.contains(studentId)
+                  ? null
+                  : () => _saveMemo(courseId, studentId, memoController.text),
+              child: Text(
+                  savingStudentIds.contains(studentId) ? '저장 중...' : '메모 저장'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _saveMemo(int courseId, int studentId, String memo) async {
+    setState(() {
+      savingStudentIds.add(studentId);
+    });
+    final response = await widget.controller.api.updateCourseStudentMemo(
+      courseId: courseId,
+      studentId: studentId,
+      memo: memo,
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(response.message)));
+    setState(() {
+      savingStudentIds.remove(studentId);
+      refreshSeed++;
+    });
   }
 }
 
@@ -1315,26 +1585,38 @@ class InstructorCourseManagementPage extends StatefulWidget {
   final AppController controller;
 
   @override
-  State<InstructorCourseManagementPage> createState() => _InstructorCourseManagementPageState();
+  State<InstructorCourseManagementPage> createState() =>
+      _InstructorCourseManagementPageState();
 }
 
-class _InstructorCourseManagementPageState extends State<InstructorCourseManagementPage> {
+class _InstructorCourseManagementPageState
+    extends State<InstructorCourseManagementPage> {
   final TextEditingController courseTitleController = TextEditingController();
-  final TextEditingController courseDescriptionController = TextEditingController();
-  final TextEditingController courseThumbnailController = TextEditingController();
-  final TextEditingController courseStartDateController = TextEditingController(text: '2026-05-01');
-  final TextEditingController courseEndDateController = TextEditingController(text: '2026-06-30');
-  final TextEditingController weekNumberController = TextEditingController(text: '1');
+  final TextEditingController courseDescriptionController =
+      TextEditingController();
+  final TextEditingController courseThumbnailController =
+      TextEditingController();
+  final TextEditingController courseStartDateController =
+      TextEditingController(text: '2026-05-01');
+  final TextEditingController courseEndDateController =
+      TextEditingController(text: '2026-06-30');
+  final TextEditingController weekNumberController =
+      TextEditingController(text: '1');
   final TextEditingController weekTitleController = TextEditingController();
   final TextEditingController weekOpenAtController = TextEditingController(
     text: '2026-05-01T09:00:00Z',
   );
   final TextEditingController contentTitleController = TextEditingController();
-  final TextEditingController contentDescriptionController = TextEditingController();
-  final TextEditingController contentVideoUrlController = TextEditingController();
-  final TextEditingController contentDocumentUrlController = TextEditingController();
-  final TextEditingController contentDurationController = TextEditingController(text: '1800');
-  final TextEditingController contentScheduledAtController = TextEditingController(
+  final TextEditingController contentDescriptionController =
+      TextEditingController();
+  final TextEditingController contentVideoUrlController =
+      TextEditingController();
+  final TextEditingController contentDocumentUrlController =
+      TextEditingController();
+  final TextEditingController contentDurationController =
+      TextEditingController(text: '0');
+  final TextEditingController contentScheduledAtController =
+      TextEditingController(
     text: '2026-05-01T09:00:00Z',
   );
   final TextEditingController contentOpenAtController = TextEditingController(
@@ -1347,6 +1629,8 @@ class _InstructorCourseManagementPageState extends State<InstructorCourseManagem
   String selectedContentType = 'VOD';
   bool isSequentialRelease = false;
   bool uploadingVideo = false;
+  bool uploadingThumbnail = false;
+  bool uploadingDocument = false;
 
   @override
   void dispose() {
@@ -1374,7 +1658,8 @@ class _InstructorCourseManagementPageState extends State<InstructorCourseManagem
       future: widget.controller.api.getMyCourses(),
       key: ValueKey(refreshSeed),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+        if (!snapshot.hasData)
+          return const Center(child: CircularProgressIndicator());
         final courses = snapshot.data!.data ?? [];
         if (selectedCourseId == null && courses.isNotEmpty) {
           selectedCourseId = _asInt(courses.first['courseId']);
@@ -1403,10 +1688,25 @@ class _InstructorCourseManagementPageState extends State<InstructorCourseManagem
                     hintText: '강의 소개를 입력하세요',
                   ),
                   const SizedBox(height: 12),
-                  _AuthTextField(
-                    controller: courseThumbnailController,
-                    label: '썸네일 URL',
-                    hintText: 'https://example.com/course.png',
+                  Row(
+                    children: [
+                      FilledButton.tonal(
+                        onPressed: uploadingThumbnail
+                            ? null
+                            : _pickAndUploadCourseThumbnail,
+                        child: Text(
+                            uploadingThumbnail ? '업로드 중...' : '썸네일 파일 올리기'),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          courseThumbnailController.text.trim().isEmpty
+                              ? '이미지 파일을 올리면 썸네일이 자동으로 연결됩니다.'
+                              : '썸네일 파일 업로드 완료',
+                          style: const TextStyle(color: Color(0xFF66777D)),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 12),
                   Row(
@@ -1434,7 +1734,8 @@ class _InstructorCourseManagementPageState extends State<InstructorCourseManagem
                     contentPadding: EdgeInsets.zero,
                     title: const Text('순차 공개 강의'),
                     subtitle: const Text('주차별 오픈 일정에 맞춰 콘텐츠를 공개합니다.'),
-                    onChanged: (value) => setState(() => isSequentialRelease = value),
+                    onChanged: (value) =>
+                        setState(() => isSequentialRelease = value),
                   ),
                   const SizedBox(height: 12),
                   Align(
@@ -1463,13 +1764,16 @@ class _InstructorCourseManagementPageState extends State<InstructorCourseManagem
                             (course) => SizedBox(
                               width: 280,
                               child: _SelectionCard(
-                                title: _displayText(course['title'], emptyMessage: '제목 미정'),
+                                title: _displayText(course['title'],
+                                    emptyMessage: '제목 미정'),
                                 description:
                                     '진도 ${_asInt(course['progressRate'])}% · 출석 ${_asInt(course['attendanceRate'])}%',
-                                selected: _asInt(course['courseId']) == selectedCourseId,
+                                selected: _asInt(course['courseId']) ==
+                                    selectedCourseId,
                                 onTap: () {
                                   setState(() {
-                                    selectedCourseId = _asInt(course['courseId']);
+                                    selectedCourseId =
+                                        _asInt(course['courseId']);
                                     selectedWeekId = null;
                                   });
                                 },
@@ -1480,7 +1784,8 @@ class _InstructorCourseManagementPageState extends State<InstructorCourseManagem
                     ),
             ),
             const SizedBox(height: 16),
-            if (selectedCourseId != null) _buildSelectedCourseDetail(selectedCourseId!),
+            if (selectedCourseId != null)
+              _buildSelectedCourseDetail(selectedCourseId!),
           ],
         );
       },
@@ -1491,7 +1796,8 @@ class _InstructorCourseManagementPageState extends State<InstructorCourseManagem
     return FutureBuilder<ApiResponse<Map<String, dynamic>>>(
       future: widget.controller.api.getCourseDetail(courseId),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+        if (!snapshot.hasData)
+          return const Center(child: CircularProgressIndicator());
         final course = snapshot.data!.data ?? {};
         final weeks = ((course['weeks'] as List<dynamic>?) ?? const [])
             .whereType<Map<String, dynamic>>()
@@ -1508,7 +1814,8 @@ class _InstructorCourseManagementPageState extends State<InstructorCourseManagem
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   InfoCard(
-                    title: _displayText(course['title'], emptyMessage: '강의 제목 미정'),
+                    title:
+                        _displayText(course['title'], emptyMessage: '강의 제목 미정'),
                     content: _displayText(
                       course['description'],
                       emptyMessage: '강의 설명이 아직 없습니다.',
@@ -1576,7 +1883,8 @@ class _InstructorCourseManagementPageState extends State<InstructorCourseManagem
                                 title:
                                     '${_asInt(week['weekNumber'])}주차 · ${_displayText(week['title'])}',
                                 description: 'weekId ${_asInt(week['weekId'])}',
-                                selected: _asInt(week['weekId']) == selectedWeekId,
+                                selected:
+                                    _asInt(week['weekId']) == selectedWeekId,
                                 onTap: () {
                                   setState(() {
                                     selectedWeekId = _asInt(week['weekId']);
@@ -1589,7 +1897,8 @@ class _InstructorCourseManagementPageState extends State<InstructorCourseManagem
                     ),
             ),
             const SizedBox(height: 16),
-            if (selectedWeekId != null) _buildContentManager(courseId, selectedWeekId!),
+            if (selectedWeekId != null)
+              _buildContentManager(courseId, selectedWeekId!),
           ],
         );
       },
@@ -1600,7 +1909,8 @@ class _InstructorCourseManagementPageState extends State<InstructorCourseManagem
     return FutureBuilder<ApiResponse<List<Map<String, dynamic>>>>(
       future: widget.controller.api.getWeekContents(courseId, weekId),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+        if (!snapshot.hasData)
+          return const Center(child: CircularProgressIndicator());
         final contents = snapshot.data!.data ?? [];
 
         return SectionPanel(
@@ -1620,24 +1930,20 @@ class _InstructorCourseManagementPageState extends State<InstructorCourseManagem
                 },
               ),
               const SizedBox(height: 12),
-              _AuthTextField(
-                controller: contentTitleController,
-                label: '콘텐츠 제목',
-                hintText: '예: 1주차 강의 영상',
-              ),
-              const SizedBox(height: 12),
-              _AuthTextField(
-                controller: contentDescriptionController,
-                label: '콘텐츠 설명',
-                hintText: '콘텐츠 소개를 입력하세요',
-              ),
-              if (selectedContentType == 'VOD') ...[
+              if (selectedContentType == 'LIVE') ...[
+                _AuthTextField(
+                  controller: contentTitleController,
+                  label: '콘텐츠 제목',
+                  hintText: '예: 1주차 실시간 수업',
+                ),
                 const SizedBox(height: 12),
                 _AuthTextField(
-                  controller: contentVideoUrlController,
-                  label: '영상 URL',
-                  hintText: 'https://cdn.example.com/video.mp4',
+                  controller: contentDescriptionController,
+                  label: '콘텐츠 설명',
+                  hintText: '콘텐츠 소개를 입력하세요',
                 ),
+              ],
+              if (selectedContentType == 'VOD') ...[
                 const SizedBox(height: 12),
                 Row(
                   children: [
@@ -1656,20 +1962,49 @@ class _InstructorCourseManagementPageState extends State<InstructorCourseManagem
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                _AuthTextField(
-                  controller: contentDurationController,
-                  label: '영상 길이(초)',
-                  hintText: '1800',
-                ),
+                if (contentVideoUrlController.text.trim().isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  InfoCard(
+                    title: contentTitleController.text.trim().isEmpty
+                        ? '업로드한 영상'
+                        : contentTitleController.text.trim(),
+                    content: contentDescriptionController.text.trim().isEmpty
+                        ? '업로드한 동영상 콘텐츠가 자동으로 등록됩니다.'
+                        : contentDescriptionController.text.trim(),
+                  ),
+                ],
               ],
               if (selectedContentType == 'DOCUMENT') ...[
                 const SizedBox(height: 12),
-                _AuthTextField(
-                  controller: contentDocumentUrlController,
-                  label: '문서 URL',
-                  hintText: 'https://cdn.example.com/handout.pdf',
+                Row(
+                  children: [
+                    FilledButton.tonal(
+                      onPressed:
+                          uploadingDocument ? null : _pickAndUploadDocument,
+                      child: Text(uploadingDocument ? '업로드 중...' : '문서 파일 올리기'),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        contentDocumentUrlController.text.trim().isEmpty
+                            ? 'PDF, DOCX 등 문서를 올리면 자동으로 연결됩니다.'
+                            : '문서 파일 업로드 완료',
+                        style: const TextStyle(color: Color(0xFF66777D)),
+                      ),
+                    ),
+                  ],
                 ),
+                if (contentDocumentUrlController.text.trim().isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  InfoCard(
+                    title: contentTitleController.text.trim().isEmpty
+                        ? '업로드한 문서'
+                        : contentTitleController.text.trim(),
+                    content: contentDescriptionController.text.trim().isEmpty
+                        ? '업로드한 문서 콘텐츠가 자동으로 등록됩니다.'
+                        : contentDescriptionController.text.trim(),
+                  ),
+                ],
               ],
               if (selectedContentType == 'LIVE') ...[
                 const SizedBox(height: 12),
@@ -1769,13 +2104,84 @@ class _InstructorCourseManagementPageState extends State<InstructorCourseManagem
     if (!response.success) return;
     setState(() {
       refreshSeed++;
+      if (selectedContentType != 'LIVE') {
+        contentTitleController.clear();
+        contentDescriptionController.clear();
+      }
+      contentVideoUrlController.clear();
+      contentDocumentUrlController.clear();
+      contentDurationController.text = '0';
     });
   }
 
   Future<void> _pickAndUploadVideo() async {
+    await _pickAndUploadFile(
+      allowedExtensions: const ['mp4', 'mov', 'webm', 'mkv'],
+      category: 'CONTENT_VIDEO',
+      uploadingSetter: (value) => setState(() => uploadingVideo = value),
+      onUploaded: (file, fileUrl) {
+        setState(() {
+          contentVideoUrlController.text = fileUrl;
+          contentTitleController.text = _inferTitleFromFileName(file.name);
+          contentDescriptionController.text =
+              '${_inferTitleFromFileName(file.name)} 동영상 콘텐츠';
+          contentDurationController.text = '0';
+        });
+      },
+      successMessage: '영상 업로드가 완료되었습니다.',
+    );
+  }
+
+  Future<void> _pickAndUploadDocument() async {
+    await _pickAndUploadFile(
+      allowedExtensions: const [
+        'pdf',
+        'doc',
+        'docx',
+        'ppt',
+        'pptx',
+        'xls',
+        'xlsx',
+        'txt'
+      ],
+      category: 'CONTENT_DOCUMENT',
+      uploadingSetter: (value) => setState(() => uploadingDocument = value),
+      onUploaded: (file, fileUrl) {
+        setState(() {
+          contentDocumentUrlController.text = fileUrl;
+          contentTitleController.text = _inferTitleFromFileName(file.name);
+          contentDescriptionController.text =
+              '${_inferTitleFromFileName(file.name)} 문서 콘텐츠';
+        });
+      },
+      successMessage: '문서 업로드가 완료되었습니다.',
+    );
+  }
+
+  Future<void> _pickAndUploadCourseThumbnail() async {
+    await _pickAndUploadFile(
+      allowedExtensions: const ['jpg', 'jpeg', 'png', 'webp', 'gif'],
+      category: 'COURSE_THUMBNAIL',
+      uploadingSetter: (value) => setState(() => uploadingThumbnail = value),
+      onUploaded: (file, fileUrl) {
+        setState(() {
+          courseThumbnailController.text = fileUrl;
+        });
+      },
+      successMessage: '썸네일 업로드가 완료되었습니다.',
+    );
+  }
+
+  Future<void> _pickAndUploadFile({
+    required List<String> allowedExtensions,
+    required String category,
+    required void Function(bool value) uploadingSetter,
+    required void Function(PlatformFile file, String fileUrl) onUploaded,
+    required String successMessage,
+  }) async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: const ['mp4', 'mov', 'webm', 'mkv'],
+      allowedExtensions: allowedExtensions,
       withData: true,
     );
     if (result == null || result.files.isEmpty) {
@@ -1789,15 +2195,14 @@ class _InstructorCourseManagementPageState extends State<InstructorCourseManagem
       return;
     }
 
-    final contentType = _guessVideoContentType(file.extension ?? '');
-    setState(() {
-      uploadingVideo = true;
-    });
+    final contentType = _guessContentType(file.extension ?? '');
+    uploadingSetter(true);
 
     try {
-      final uploadUrlResponse = await widget.controller.api.createVideoUploadUrl(
+      final uploadUrlResponse = await widget.controller.api.createUploadUrl(
         fileName: file.name,
         contentType: contentType,
+        category: category,
       );
       if (!uploadUrlResponse.success || uploadUrlResponse.data == null) {
         _notify(uploadUrlResponse.message);
@@ -1814,29 +2219,58 @@ class _InstructorCourseManagementPageState extends State<InstructorCourseManagem
         _notify('S3 업로드에 실패했습니다. (${response.statusCode})');
         return;
       }
-      setState(() {
-        contentVideoUrlController.text = '${data['fileUrl'] ?? ''}';
-      });
-      _notify('영상 업로드가 완료되었습니다.');
+      onUploaded(file, '${data['fileUrl'] ?? ''}');
+      _notify(successMessage);
     } catch (_) {
-      _notify('영상 업로드 중 오류가 발생했습니다.');
+      _notify('파일 업로드 중 오류가 발생했습니다.');
     } finally {
       if (mounted) {
-        setState(() {
-          uploadingVideo = false;
-        });
+        uploadingSetter(false);
       }
     }
   }
 
-  String _guessVideoContentType(String extension) {
+  String _inferTitleFromFileName(String fileName) {
+    final parts = fileName.split('.');
+    final withoutExtension = parts.length > 1
+        ? parts.sublist(0, parts.length - 1).join('.')
+        : fileName;
+    return withoutExtension.replaceAll(RegExp(r'[_-]+'), ' ').trim();
+  }
+
+  String _guessContentType(String extension) {
     switch (extension.toLowerCase()) {
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'webp':
+        return 'image/webp';
+      case 'gif':
+        return 'image/gif';
       case 'mov':
         return 'video/quicktime';
       case 'webm':
         return 'video/webm';
       case 'mkv':
         return 'video/x-matroska';
+      case 'pdf':
+        return 'application/pdf';
+      case 'doc':
+        return 'application/msword';
+      case 'docx':
+        return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      case 'ppt':
+        return 'application/vnd.ms-powerpoint';
+      case 'pptx':
+        return 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+      case 'xls':
+        return 'application/vnd.ms-excel';
+      case 'xlsx':
+        return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      case 'txt':
+        return 'text/plain';
       case 'mp4':
       default:
         return 'video/mp4';
@@ -1845,7 +2279,216 @@ class _InstructorCourseManagementPageState extends State<InstructorCourseManagem
 
   void _notify(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
+  }
+}
+
+class MyPage extends StatefulWidget {
+  const MyPage({super.key, required this.controller});
+
+  final AppController controller;
+
+  @override
+  State<MyPage> createState() => _MyPageState();
+}
+
+class _MyPageState extends State<MyPage> {
+  final TextEditingController nameController = TextEditingController();
+  int refreshSeed = 0;
+  bool uploadingProfile = false;
+  bool saving = false;
+  String profileImageUrl = '';
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<ApiResponse<Map<String, dynamic>>>(
+      key: ValueKey(refreshSeed),
+      future: widget.controller.api.getMyProfile(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData)
+          return const Center(child: CircularProgressIndicator());
+        final profile = snapshot.data!.data ?? {};
+        if (nameController.text.trim().isEmpty) {
+          nameController.text = _displayText(profile['name'], emptyMessage: '');
+        }
+        if (profileImageUrl.trim().isEmpty) {
+          profileImageUrl =
+              _displayText(profile['profileImageUrl'], emptyMessage: '');
+        }
+        final imageProvider = _profileImageProvider(profileImageUrl);
+        return ListView(
+          children: [
+            const DashboardHeroCard(
+              title: '마이페이지',
+              subtitle: '내 계정 정보와 프로필 이미지를 관리할 수 있습니다.',
+            ),
+            const SizedBox(height: 16),
+            SectionPanel(
+              title: '프로필',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 40,
+                        backgroundColor: const Color(0xFF0E7A66),
+                        backgroundImage: imageProvider,
+                        child: imageProvider == null
+                            ? Text(
+                                _displayText(profile['name'], emptyMessage: '?')
+                                    .characters
+                                    .first,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              )
+                            : null,
+                      ),
+                      const SizedBox(width: 16),
+                      FilledButton.tonal(
+                        onPressed:
+                            uploadingProfile ? null : _uploadProfileImage,
+                        child:
+                            Text(uploadingProfile ? '업로드 중...' : '프로필 이미지 올리기'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  _AuthTextField(
+                    controller: nameController,
+                    label: '이름',
+                    hintText: '이름을 입력하세요',
+                  ),
+                  const SizedBox(height: 12),
+                  InfoCard(
+                    title: '이메일',
+                    content: _displayText(profile['email'],
+                        emptyMessage: '이메일 정보가 없습니다.'),
+                  ),
+                  InfoCard(
+                    title: '역할',
+                    content: UserRole.fromApi(_displayText(profile['role'],
+                            emptyMessage: 'STUDENT'))
+                        .label,
+                  ),
+                  if (profileImageUrl.trim().isNotEmpty)
+                    InfoCard(
+                      title: '프로필 이미지 URL',
+                      content: profileImageUrl,
+                    ),
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: FilledButton(
+                      onPressed: saving ? null : _saveProfile,
+                      child: Text(saving ? '저장 중...' : '내 정보 저장'),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  const EndpointChip(label: 'GET /api/v1/users/me'),
+                  const EndpointChip(label: 'PATCH /api/v1/users/me'),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _uploadProfileImage() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['jpg', 'jpeg', 'png', 'webp'],
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty) {
+      return;
+    }
+    final file = result.files.single;
+    final bytes = file.bytes;
+    if (bytes == null || bytes.isEmpty) {
+      _notify('파일 데이터를 읽을 수 없습니다.');
+      return;
+    }
+    final contentType = switch ((file.extension ?? '').toLowerCase()) {
+      'jpg' || 'jpeg' => 'image/jpeg',
+      'png' => 'image/png',
+      'webp' => 'image/webp',
+      _ => 'application/octet-stream',
+    };
+    setState(() {
+      uploadingProfile = true;
+    });
+    try {
+      final upload = await widget.controller.api.createUploadUrl(
+        fileName: file.name,
+        contentType: contentType,
+        category: 'PROFILE_IMAGE',
+      );
+      if (!upload.success || upload.data == null) {
+        _notify(upload.message);
+        return;
+      }
+      final response = await http.put(
+        Uri.parse('${upload.data!['uploadUrl']}'),
+        headers: {'Content-Type': contentType},
+        body: bytes,
+      );
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        _notify('프로필 이미지 업로드에 실패했습니다. (${response.statusCode})');
+        return;
+      }
+      setState(() {
+        profileImageUrl = '${upload.data!['fileUrl'] ?? ''}';
+      });
+      _notify('프로필 이미지 업로드가 완료되었습니다.');
+    } catch (_) {
+      _notify('프로필 이미지 업로드 중 오류가 발생했습니다.');
+    } finally {
+      if (mounted) {
+        setState(() {
+          uploadingProfile = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _saveProfile() async {
+    setState(() {
+      saving = true;
+    });
+    final response = await widget.controller.api.updateMyProfile(
+      name: nameController.text.trim(),
+      profileImageUrl: profileImageUrl.trim(),
+    );
+    if (!mounted) return;
+    _notify(response.message);
+    if (response.success) {
+      widget.controller.refreshUser();
+      setState(() {
+        refreshSeed++;
+      });
+    }
+    setState(() {
+      saving = false;
+    });
+  }
+
+  void _notify(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 }
 
@@ -1855,11 +2498,14 @@ class InstructorTeamAnalysisPage extends StatefulWidget {
   final AppController controller;
 
   @override
-  State<InstructorTeamAnalysisPage> createState() => _InstructorTeamAnalysisPageState();
+  State<InstructorTeamAnalysisPage> createState() =>
+      _InstructorTeamAnalysisPageState();
 }
 
-class _InstructorTeamAnalysisPageState extends State<InstructorTeamAnalysisPage> {
-  final TextEditingController teamSizeController = TextEditingController(text: '3');
+class _InstructorTeamAnalysisPageState
+    extends State<InstructorTeamAnalysisPage> {
+  final TextEditingController teamSizeController =
+      TextEditingController(text: '3');
   int refreshSeed = 0;
   int? selectedCourseId;
   int? selectedTeamId;
@@ -1876,7 +2522,8 @@ class _InstructorTeamAnalysisPageState extends State<InstructorTeamAnalysisPage>
       future: widget.controller.api.getMyCourses(),
       key: ValueKey(refreshSeed),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+        if (!snapshot.hasData)
+          return const Center(child: CircularProgressIndicator());
         final courses = snapshot.data!.data ?? [];
         if (selectedCourseId == null && courses.isNotEmpty) {
           selectedCourseId = _asInt(courses.first['courseId']);
@@ -1909,10 +2556,12 @@ class _InstructorTeamAnalysisPageState extends State<InstructorTeamAnalysisPage>
                                   course['description'],
                                   emptyMessage: '설명이 없습니다.',
                                 ),
-                                selected: _asInt(course['courseId']) == selectedCourseId,
+                                selected: _asInt(course['courseId']) ==
+                                    selectedCourseId,
                                 onTap: () {
                                   setState(() {
-                                    selectedCourseId = _asInt(course['courseId']);
+                                    selectedCourseId =
+                                        _asInt(course['courseId']);
                                     selectedTeamId = null;
                                   });
                                 },
@@ -1934,7 +2583,8 @@ class _InstructorTeamAnalysisPageState extends State<InstructorTeamAnalysisPage>
     return FutureBuilder<ApiResponse<List<Map<String, dynamic>>>>(
       future: widget.controller.api.getCourseTeams(courseId),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+        if (!snapshot.hasData)
+          return const Center(child: CircularProgressIndicator());
         final teams = snapshot.data!.data ?? [];
         if (selectedTeamId == null && teams.isNotEmpty) {
           selectedTeamId = _asInt(teams.first['teamId']);
@@ -1980,7 +2630,8 @@ class _InstructorTeamAnalysisPageState extends State<InstructorTeamAnalysisPage>
                                 title: _displayText(team['name']),
                                 description:
                                     '인원 ${_asInt(team['memberCount'])}명 · 팀빌딩 ${_asInt(team['teamBuildingScore'])}\n${_displayText(team['matchingSummary'], emptyMessage: '추천 사유가 없습니다.')}',
-                                selected: _asInt(team['teamId']) == selectedTeamId,
+                                selected:
+                                    _asInt(team['teamId']) == selectedTeamId,
                                 onTap: () {
                                   setState(() {
                                     selectedTeamId = _asInt(team['teamId']);
@@ -1993,7 +2644,8 @@ class _InstructorTeamAnalysisPageState extends State<InstructorTeamAnalysisPage>
                     ),
             ),
             const SizedBox(height: 16),
-            if (selectedTeamId != null) _buildSelectedTeamDetail(selectedTeamId!),
+            if (selectedTeamId != null)
+              _buildSelectedTeamDetail(selectedTeamId!),
           ],
         );
       },
@@ -2008,18 +2660,21 @@ class _InstructorTeamAnalysisPageState extends State<InstructorTeamAnalysisPage>
         widget.controller.api.getTeamMemberContributions(teamId),
       ]),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+        if (!snapshot.hasData)
+          return const Center(child: CircularProgressIndicator());
         final detail = snapshot.data![0].data as Map<String, dynamic>? ?? {};
         final analytics = snapshot.data![1].data as Map<String, dynamic>? ?? {};
-        final contributions = snapshot.data![2].data as List<Map<String, dynamic>>? ?? [];
+        final contributions =
+            snapshot.data![2].data as List<Map<String, dynamic>>? ?? [];
         final riskSignals = _asStringList(analytics['riskSignals']);
         final strengthSignals = _asStringList(analytics['strengthSignals']);
         final members = (detail['members'] as List<dynamic>? ?? [])
             .whereType<Map<String, dynamic>>()
             .toList();
-        final styleDistributions = (analytics['styleDistributions'] as List<dynamic>? ?? [])
-            .whereType<Map<String, dynamic>>()
-            .toList();
+        final styleDistributions =
+            (analytics['styleDistributions'] as List<dynamic>? ?? [])
+                .whereType<Map<String, dynamic>>()
+                .toList();
 
         return Column(
           children: [
@@ -2198,7 +2853,8 @@ class _InstructorTeamAnalysisPageState extends State<InstructorTeamAnalysisPage>
       teamSize: int.tryParse(teamSizeController.text.trim()) ?? 3,
     );
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response.message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(response.message)));
     if (!response.success) return;
     setState(() {
       refreshSeed++;
@@ -2213,7 +2869,8 @@ class ApiRulesPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       children: const [
-        Text('공통 API 규칙', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700)),
+        Text('공통 API 규칙',
+            style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700)),
         SizedBox(height: 12),
         InfoCard(title: '기본 URL', content: '/api/v1'),
         InfoCard(
@@ -2222,7 +2879,8 @@ class ApiRulesPage extends StatelessWidget {
         ),
         InfoCard(
           title: '실패 응답',
-          content: '{"success": false, "message": "...", "errorCode": "COURSE_NOT_FOUND"}',
+          content:
+              '{"success": false, "message": "...", "errorCode": "COURSE_NOT_FOUND"}',
         ),
         InfoCard(
           title: '인증 헤더',
@@ -2259,9 +2917,12 @@ class MetricCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 13, color: Colors.black54)),
+          Text(label,
+              style: const TextStyle(fontSize: 13, color: Colors.black54)),
           const SizedBox(height: 8),
-          Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+          Text(value,
+              style:
+                  const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
         ],
       ),
     );
@@ -2311,7 +2972,9 @@ class InfoCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+          Text(title,
+              style:
+                  const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
           const SizedBox(height: 6),
           Text(content),
         ],
@@ -2321,7 +2984,8 @@ class InfoCard extends StatelessWidget {
 }
 
 class DashboardHeroCard extends StatelessWidget {
-  const DashboardHeroCard({super.key, required this.title, required this.subtitle});
+  const DashboardHeroCard(
+      {super.key, required this.title, required this.subtitle});
 
   final String title;
   final String subtitle;
@@ -2364,7 +3028,8 @@ class DashboardHeroCard extends StatelessWidget {
 }
 
 class EmptyStateCard extends StatelessWidget {
-  const EmptyStateCard({super.key, required this.title, required this.description});
+  const EmptyStateCard(
+      {super.key, required this.title, required this.description});
 
   final String title;
   final String description;
@@ -2474,6 +3139,39 @@ class _SelectionCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEAF7F3),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        '$label $value',
+        style: const TextStyle(
+          color: Color(0xFF0E5C63),
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+ImageProvider<Object>? _profileImageProvider(String? url) {
+  final text = url?.trim() ?? '';
+  if (text.isEmpty) {
+    return null;
+  }
+  return NetworkImage(text);
 }
 
 int _asInt(dynamic value) {

@@ -88,6 +88,7 @@ class HttpApiClient implements ApiClient {
       name: (userMap['name'] as String?) ?? '',
       email: (userMap['email'] as String?) ?? email,
       role: UserRole.fromApi((userMap['role'] as String?) ?? role.apiValue),
+      profileImageUrl: userMap['profileImageUrl'] as String?,
     );
     return ApiResponse(
       success: response.success,
@@ -150,6 +151,23 @@ class HttpApiClient implements ApiClient {
       _getMap('/courses/$courseId');
 
   @override
+  Future<ApiResponse<List<Map<String, dynamic>>>> getCourseStudents(
+          int courseId) =>
+      _getList('/courses/$courseId/students');
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> updateCourseStudentMemo({
+    required int courseId,
+    required int studentId,
+    required String memo,
+  }) {
+    return _patchMap(
+      '/courses/$courseId/students/$studentId/memo',
+      body: {'memo': memo},
+    );
+  }
+
+  @override
   Future<ApiResponse<Map<String, dynamic>>> createWeek({
     required int courseId,
     required int weekNumber,
@@ -167,7 +185,8 @@ class HttpApiClient implements ApiClient {
   }
 
   @override
-  Future<ApiResponse<List<Map<String, dynamic>>>> getWeekContents(int courseId, int weekId) =>
+  Future<ApiResponse<List<Map<String, dynamic>>>> getWeekContents(
+          int courseId, int weekId) =>
       _getList('/courses/$courseId/weeks/$weekId/contents');
 
   @override
@@ -212,11 +231,59 @@ class HttpApiClient implements ApiClient {
   }
 
   @override
-  Future<ApiResponse<List<Map<String, dynamic>>>> getCourseAssignments(int courseId) =>
+  Future<ApiResponse<Map<String, dynamic>>> createUploadUrl({
+    required String fileName,
+    required String contentType,
+    required String category,
+  }) {
+    return _postMap(
+      '/uploads/presigned-url',
+      body: {
+        'fileName': fileName,
+        'contentType': contentType,
+        'category': category,
+      },
+    );
+  }
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> getMyProfile() =>
+      _getMap('/users/me');
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> updateMyProfile({
+    required String name,
+    required String profileImageUrl,
+  }) async {
+    final response = await _patchMap(
+      '/users/me',
+      body: {
+        'name': name,
+        'profileImageUrl': profileImageUrl,
+      },
+    );
+    if (response.success && response.data != null && _currentUser != null) {
+      final data = response.data!;
+      _currentUser = AppUser(
+        userId: (data['userId'] as num?)?.toInt() ?? _currentUser!.userId,
+        name: (data['name'] as String?) ?? _currentUser!.name,
+        email: (data['email'] as String?) ?? _currentUser!.email,
+        role: UserRole.fromApi(
+            (data['role'] as String?) ?? _currentUser!.role.apiValue),
+        profileImageUrl: data['profileImageUrl'] as String?,
+      );
+    }
+    return response;
+  }
+
+  @override
+  Future<ApiResponse<List<Map<String, dynamic>>>> getCourseAssignments(
+          int courseId) =>
       _getList('/courses/$courseId/assignments');
 
   @override
-  Future<ApiResponse<List<Map<String, dynamic>>>> getCourseQuizzes(int courseId) =>
+  Future<ApiResponse<List<Map<String, dynamic>>>> getCourseQuizzes(
+          int courseId) =>
       _getList('/courses/$courseId/quizzes');
 
   @override
@@ -243,7 +310,8 @@ class HttpApiClient implements ApiClient {
   }
 
   @override
-  Future<ApiResponse<Map<String, dynamic>>> getAssignmentDetail(int assignmentId) =>
+  Future<ApiResponse<Map<String, dynamic>>> getAssignmentDetail(
+          int assignmentId) =>
       _getMap('/assignments/$assignmentId');
 
   @override
@@ -262,10 +330,12 @@ class HttpApiClient implements ApiClient {
       _getMap('/dashboard/student');
 
   @override
-  Future<ApiResponse<Map<String, dynamic>>> getMyReport() => _getMap('/reports/me');
+  Future<ApiResponse<Map<String, dynamic>>> getMyReport() =>
+      _getMap('/reports/me');
 
   @override
-  Future<ApiResponse<Map<String, dynamic>>> getRecommendations(int studentId) async {
+  Future<ApiResponse<Map<String, dynamic>>> getRecommendations(
+      int studentId) async {
     final response = await _get('/students/$studentId/recommendations');
     final data = _extractMap(response.data);
     return ApiResponse(
@@ -297,7 +367,8 @@ class HttpApiClient implements ApiClient {
   }
 
   @override
-  Future<ApiResponse<List<Map<String, dynamic>>>> getCourseTeams(int courseId) =>
+  Future<ApiResponse<List<Map<String, dynamic>>>> getCourseTeams(
+          int courseId) =>
       _getList('/courses/$courseId/teams');
 
   @override
@@ -331,7 +402,8 @@ class HttpApiClient implements ApiClient {
       _getMap('/teams/$teamId/analytics');
 
   @override
-  Future<ApiResponse<List<Map<String, dynamic>>>> getTeamMemberContributions(int teamId) =>
+  Future<ApiResponse<List<Map<String, dynamic>>>> getTeamMemberContributions(
+          int teamId) =>
       _getList('/teams/$teamId/members/contributions');
 
   @override
@@ -339,7 +411,8 @@ class HttpApiClient implements ApiClient {
       _getMap('/teams/$teamId/chat-room');
 
   @override
-  Future<ApiResponse<List<Map<String, dynamic>>>> getChatMessages(int chatRoomId) async {
+  Future<ApiResponse<List<Map<String, dynamic>>>> getChatMessages(
+      int chatRoomId) async {
     final response = await _get('/chat-rooms/$chatRoomId/messages');
     final data = _extractList(response.data)
         .map(
@@ -358,11 +431,13 @@ class HttpApiClient implements ApiClient {
   }
 
   @override
-  Future<ApiResponse<Map<String, dynamic>>> getInstructorDashboard(int courseId) =>
+  Future<ApiResponse<Map<String, dynamic>>> getInstructorDashboard(
+          int courseId) =>
       _getMap('/dashboard/instructor/courses/$courseId');
 
   @override
-  Future<ApiResponse<List<Map<String, dynamic>>>> getRiskStudents(int courseId) =>
+  Future<ApiResponse<List<Map<String, dynamic>>>> getRiskStudents(
+          int courseId) =>
       _getList('/instructors/courses/$courseId/students/risk');
 
   @override
@@ -372,7 +447,8 @@ class HttpApiClient implements ApiClient {
       _getList('/instructors/courses/$courseId/students/understanding-low');
 
   @override
-  Future<ApiResponse<List<Map<String, dynamic>>>> getInterventions(int courseId) async {
+  Future<ApiResponse<List<Map<String, dynamic>>>> getInterventions(
+      int courseId) async {
     final response = await _get('/instructors/courses/$courseId/interventions');
     final data = _extractList(response.data)
         .map(
@@ -437,6 +513,19 @@ class HttpApiClient implements ApiClient {
     );
   }
 
+  Future<ApiResponse<Map<String, dynamic>>> _patchMap(
+    String path, {
+    required Map<String, dynamic> body,
+  }) async {
+    final response = await _patch(path, body: body);
+    return ApiResponse(
+      success: response.success,
+      message: response.message,
+      data: _extractMap(response.data),
+      errorCode: response.errorCode,
+    );
+  }
+
   Future<ApiResponse<dynamic>> _get(String path) async {
     try {
       final response = await _client.get(
@@ -465,6 +554,29 @@ class HttpApiClient implements ApiClient {
       final response = await _client.post(
         Uri.parse('$_baseUrl$path'),
         headers: _headers(withAuth: withAuth),
+        body: jsonEncode(body),
+      );
+      return _parse(response);
+    } catch (_) {
+      if (!_allowFallback) {
+        return const ApiResponse(
+          success: false,
+          message: 'Network error',
+          errorCode: 'NETWORK_ERROR',
+        );
+      }
+      return _fallbackFor(path, body: body);
+    }
+  }
+
+  Future<ApiResponse<dynamic>> _patch(
+    String path, {
+    required Map<String, dynamic> body,
+  }) async {
+    try {
+      final response = await _client.patch(
+        Uri.parse('$_baseUrl$path'),
+        headers: _headers(withAuth: true),
         body: jsonEncode(body),
       );
       return _parse(response);
@@ -510,7 +622,8 @@ class HttpApiClient implements ApiClient {
       success: decoded['success'] == true,
       message: (decoded['message'] as String?) ?? 'No message',
       data: decoded['data'],
-      errorCode: (decoded['errorCode'] as String?) ?? _statusErrorCode(response.statusCode),
+      errorCode: (decoded['errorCode'] as String?) ??
+          _statusErrorCode(response.statusCode),
     );
   }
 
@@ -566,37 +679,66 @@ class HttpApiClient implements ApiClient {
     if (path.startsWith('/courses/') && path.endsWith('/quizzes')) {
       return _fallback.getCourseQuizzes(_extractId(path));
     }
-    if (path.startsWith('/courses/')) return _fallback.getCourseDetail(_extractId(path));
+    if (path.startsWith('/courses/') && path.endsWith('/students')) {
+      return _fallback.getCourseStudents(_extractId(path));
+    }
+    if (RegExp(r'^/courses/\d+/students/\d+/memo$').hasMatch(path)) {
+      final ids = RegExp(r'(\d+)')
+          .allMatches(path)
+          .map((match) => int.parse(match.group(1)!))
+          .toList();
+      return _fallback.updateCourseStudentMemo(
+        courseId: ids.isNotEmpty ? ids[0] : 0,
+        studentId: ids.length > 1 ? ids[1] : 0,
+        memo: (body?['memo'] as String?) ?? '',
+      );
+    }
+    if (path.startsWith('/courses/'))
+      return _fallback.getCourseDetail(_extractId(path));
     if (path.startsWith('/contents/') && path.endsWith('/progress')) {
-      final watchedSeconds = (body?['lastPositionSeconds'] as num?)?.toInt() ?? 0;
+      final watchedSeconds =
+          (body?['lastPositionSeconds'] as num?)?.toInt() ?? 0;
       final totalSeconds = (body?['totalSeconds'] as num?)?.toInt() ?? 1;
       return _fallback.saveProgress(
         contentId: _extractId(path),
-        progressRate: totalSeconds <= 0 ? 0 : (watchedSeconds * 100 ~/ totalSeconds),
+        progressRate:
+            totalSeconds <= 0 ? 0 : (watchedSeconds * 100 ~/ totalSeconds),
         watchedSeconds: watchedSeconds,
         totalSeconds: totalSeconds,
       );
     }
-    if (path.startsWith('/contents/')) return _fallback.getContentDetail(_extractId(path));
+    if (path.startsWith('/contents/'))
+      return _fallback.getContentDetail(_extractId(path));
     if (path.startsWith('/assignments/') && path.endsWith('/submissions')) {
       return _fallback.submitAssignment(
         assignmentId: _extractId(path),
         answerText: (body?['answerText'] as String?) ?? '',
       );
     }
-    if (path.startsWith('/assignments/')) return _fallback.getAssignmentDetail(_extractId(path));
+    if (path.startsWith('/assignments/'))
+      return _fallback.getAssignmentDetail(_extractId(path));
     if (path == '/dashboard/student') return _fallback.getStudentDashboard();
     if (path == '/reports/me') return _fallback.getMyReport();
+    if (path == '/users/me' && body == null) return _fallback.getMyProfile();
+    if (path == '/users/me' && body != null) {
+      return _fallback.updateMyProfile(
+        name: (body['name'] as String?) ?? '',
+        profileImageUrl: (body['profileImageUrl'] as String?) ?? '',
+      );
+    }
     if (path == '/teams/me') return _fallback.getMyTeam();
-    if (path == '/chat-rooms/4001/messages') return _fallback.getChatMessages(4001);
+    if (path == '/chat-rooms/4001/messages')
+      return _fallback.getChatMessages(4001);
     if (path.startsWith('/teams/') && path.endsWith('/chat-room')) {
       return _fallback.getTeamChatRoom(_extractId(path));
     }
-    if (path.startsWith('/teams/')) return _fallback.getTeamDetail(_extractId(path));
+    if (path.startsWith('/teams/'))
+      return _fallback.getTeamDetail(_extractId(path));
     if (path == '/dashboard/instructor/courses/101') {
       return _fallback.getInstructorDashboard(101);
     }
-    if (path == '/instructors/courses/101/students/risk') return _fallback.getRiskStudents(101);
+    if (path == '/instructors/courses/101/students/risk')
+      return _fallback.getRiskStudents(101);
     if (path == '/instructors/courses/101/students/understanding-low') {
       return _fallback.getLowUnderstandingStudents(101);
     }

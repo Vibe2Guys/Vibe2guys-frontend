@@ -35,12 +35,14 @@ class AppUser {
     required this.name,
     required this.email,
     required this.role,
+    this.profileImageUrl,
   });
 
   final int userId;
   final String name;
   final String email;
   final UserRole role;
+  final String? profileImageUrl;
 }
 
 class Endpoints {
@@ -56,13 +58,21 @@ class Endpoints {
 
   static String courseDetail(int courseId) => '$baseUrl/courses/$courseId';
   static String courseWeeks(int courseId) => '$baseUrl/courses/$courseId/weeks';
+  static String courseStudents(int courseId) =>
+      '$baseUrl/courses/$courseId/students';
+  static String courseStudentMemo(int courseId, int studentId) =>
+      '$baseUrl/courses/$courseId/students/$studentId/memo';
   static String weekContents(int courseId, int weekId) =>
       '$baseUrl/courses/$courseId/weeks/$weekId/contents';
   static String createContent(int weekId) => '$baseUrl/weeks/$weekId/contents';
-  static const String createVideoUploadUrl = '$baseUrl/uploads/videos/presigned-url';
+  static const String createUploadUrl = '$baseUrl/uploads/presigned-url';
+  static const String createVideoUploadUrl =
+      '$baseUrl/uploads/videos/presigned-url';
+  static const String usersMe = '$baseUrl/users/me';
   static String courseAssignments(int courseId) =>
       '$baseUrl/courses/$courseId/assignments';
-  static String courseQuizzes(int courseId) => '$baseUrl/courses/$courseId/quizzes';
+  static String courseQuizzes(int courseId) =>
+      '$baseUrl/courses/$courseId/quizzes';
   static String contentDetail(int contentId) => '$baseUrl/contents/$contentId';
   static String contentProgress(int contentId) =>
       '$baseUrl/contents/$contentId/progress';
@@ -80,7 +90,8 @@ class Endpoints {
   static String teamMemberContributions(int teamId) =>
       '$baseUrl/teams/$teamId/members/contributions';
   static String teamChatRoom(int teamId) => '$baseUrl/teams/$teamId/chat-room';
-  static String chatMessages(int roomId) => '$baseUrl/chat-rooms/$roomId/messages';
+  static String chatMessages(int roomId) =>
+      '$baseUrl/chat-rooms/$roomId/messages';
 
   static String instructorDashboard(int courseId) =>
       '$baseUrl/dashboard/instructor/courses/$courseId';
