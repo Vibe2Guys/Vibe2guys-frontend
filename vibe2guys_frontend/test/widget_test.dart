@@ -4,8 +4,8 @@ import 'package:vibe2guys_frontend/app.dart';
 
 void main() {
   testWidgets('login screen renders', (WidgetTester tester) async {
-    await tester.pumpWidget(const Vibe2GuysApp());
-    expect(find.text('Vibe2Guys LMS'), findsWidgets);
+    await tester.pumpWidget(const LearnSightApp());
+    expect(find.text('LearnSight'), findsWidgets);
     expect(find.text('로그인'), findsOneWidget);
   });
 }

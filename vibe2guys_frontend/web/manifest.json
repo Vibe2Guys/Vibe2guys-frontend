@@ -1,6 +1,6 @@
 {
-    "name": "vibe2guys_frontend",
-    "short_name": "vibe2guys_frontend",
+    "name": "LearnSight",
+    "short_name": "LearnSight",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

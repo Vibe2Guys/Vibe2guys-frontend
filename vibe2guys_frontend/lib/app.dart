@@ -12,20 +12,20 @@ const bool kShowDeveloperApi = bool.fromEnvironment(
   defaultValue: false,
 );
 
-class Vibe2GuysApp extends StatefulWidget {
-  const Vibe2GuysApp({super.key});
+class LearnSightApp extends StatefulWidget {
+  const LearnSightApp({super.key});
 
   @override
-  State<Vibe2GuysApp> createState() => _Vibe2GuysAppState();
+  State<LearnSightApp> createState() => _LearnSightAppState();
 }
 
-class _Vibe2GuysAppState extends State<Vibe2GuysApp> {
+class _LearnSightAppState extends State<LearnSightApp> {
   final AppController controller = AppController();
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Vibe2Guys LMS',
+      title: 'LearnSight',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
@@ -203,7 +203,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                               borderRadius: BorderRadius.circular(999),
                             ),
                             child: const Text(
-                              'Collaborative Learning Platform',
+                              'AI Learning Analytics Platform',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w700,
@@ -212,7 +212,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                           ),
                           const SizedBox(height: 22),
                           const Text(
-                            'Vibe2Guys LMS',
+                            'LearnSight',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 34,
@@ -223,8 +223,8 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                           const SizedBox(height: 14),
                           Text(
                             isRegister
-                                ? '학습자는 몇 가지 정보만 입력하면 바로 계정을 만들 수 있습니다.'
-                                : '학생, 교수자, 관리자 계정으로 같은 화면에서 바로 로그인할 수 있습니다.',
+                                ? '몇 가지 정보만 입력하면 LearnSight 계정을 바로 만들 수 있습니다.'
+                                : 'LearnSight에서 학습 상태를 확인하고 강의 데이터를 한 화면에서 관리할 수 있습니다.',
                             style: const TextStyle(
                               color: Color(0xFFD5ECE7),
                               fontSize: 15,
