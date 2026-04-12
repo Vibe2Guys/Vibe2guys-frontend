@@ -36,6 +36,8 @@ abstract class ApiClient {
     required String courseCode,
   });
   Future<ApiResponse<Map<String, dynamic>>> getCourseDetail(int courseId);
+  Future<ApiResponse<List<Map<String, dynamic>>>> getMyLearningLogs(
+      int courseId);
   Future<ApiResponse<List<Map<String, dynamic>>>> getCourseStudents(
       int courseId);
   Future<ApiResponse<Map<String, dynamic>>> updateCourseStudentMemo({

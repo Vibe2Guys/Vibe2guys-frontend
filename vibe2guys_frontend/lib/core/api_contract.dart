@@ -63,6 +63,8 @@ class Endpoints {
       '$baseUrl/courses/$courseId/students';
   static String courseStudentMemo(int courseId, int studentId) =>
       '$baseUrl/courses/$courseId/students/$studentId/memo';
+  static String courseLearningLogs(int courseId) =>
+      '$baseUrl/courses/$courseId/learning-logs/me';
   static String weekContents(int courseId, int weekId) =>
       '$baseUrl/courses/$courseId/weeks/$weekId/contents';
   static String createContent(int weekId) => '$baseUrl/weeks/$weekId/contents';

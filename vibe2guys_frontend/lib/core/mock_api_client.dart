@@ -272,6 +272,47 @@ class MockApiClient implements ApiClient {
   }
 
   @override
+  Future<ApiResponse<List<Map<String, dynamic>>>> getMyLearningLogs(
+      int courseId) async {
+    final unauthorized = _unauthorized<List<Map<String, dynamic>>>();
+    if (unauthorized != null) return unauthorized;
+    await Future<void>.delayed(const Duration(milliseconds: 180));
+    return const ApiResponse(
+      success: true,
+      message: '내 학습 로그 조회 성공',
+      data: [
+        {
+          'contentId': 5001,
+          'title': '1주차 강의 영상',
+          'type': 'VOD',
+          'progressRate': 78,
+          'isCompleted': false,
+          'attendanceStatus': 'ATTENDED',
+          'attendanceMinutes': 42,
+        },
+        {
+          'contentId': 5002,
+          'title': '1주차 교안',
+          'type': 'DOCUMENT',
+          'progressRate': 100,
+          'isCompleted': true,
+          'attendanceStatus': null,
+          'attendanceMinutes': null,
+        },
+        {
+          'contentId': 5003,
+          'title': '2주차 강의 영상',
+          'type': 'VOD',
+          'progressRate': 34,
+          'isCompleted': false,
+          'attendanceStatus': 'LATE',
+          'attendanceMinutes': 18,
+        },
+      ],
+    );
+  }
+
+  @override
   Future<ApiResponse<List<Map<String, dynamic>>>> getCourseStudents(
       int courseId) async {
     final unauthorized = _unauthorized<List<Map<String, dynamic>>>();

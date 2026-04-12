@@ -180,6 +180,11 @@ class HttpApiClient implements ApiClient {
       _getMap('/courses/$courseId');
 
   @override
+  Future<ApiResponse<List<Map<String, dynamic>>>> getMyLearningLogs(
+          int courseId) =>
+      _getList('/courses/$courseId/learning-logs/me');
+
+  @override
   Future<ApiResponse<List<Map<String, dynamic>>>> getCourseStudents(
           int courseId) =>
       _getList('/courses/$courseId/students');
@@ -714,6 +719,9 @@ class HttpApiClient implements ApiClient {
     }
     if (path.startsWith('/courses/') && path.endsWith('/assignments')) {
       return _fallback.getCourseAssignments(_extractId(path));
+    }
+    if (path.startsWith('/courses/') && path.endsWith('/learning-logs/me')) {
+      return _fallback.getMyLearningLogs(_extractId(path));
     }
     if (path.startsWith('/courses/') && path.endsWith('/quizzes')) {
       return _fallback.getCourseQuizzes(_extractId(path));

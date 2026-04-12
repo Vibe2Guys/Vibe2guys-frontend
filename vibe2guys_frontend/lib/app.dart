@@ -1100,27 +1100,24 @@ class _StudentMyCoursesPageState extends State<StudentMyCoursesPage> {
                   : Wrap(
                       spacing: 12,
                       runSpacing: 12,
-                      children: courses
-                          .map(
-                            (course) => SizedBox(
-                              width: 280,
-                              child: _SelectionCard(
-                                title: _displayText(course['title']),
-                                description:
-                                    '진도 ${_asInt(course['progressRate'])}% · 출석 ${_asInt(course['attendanceRate'])}%\n강의 코드 ${_displayText(course['courseCode'], emptyMessage: '-')}',
-                                selected: _asInt(course['courseId']) ==
-                                    selectedCourseId,
-                                onTap: () {
-                                  setState(() {
-                                    selectedCourseId =
-                                        _asInt(course['courseId']);
-                                    selectedWeekId = null;
-                                  });
-                                },
-                              ),
-                            ),
-                          )
-                          .toList(),
+                      children: courses.map((course) {
+                        return SizedBox(
+                          width: 280,
+                          child: _SelectionCard(
+                            title: _displayText(course['title']),
+                            description:
+                                '진도 ${_asInt(course['progressRate'])}% · 출석 ${_asInt(course['attendanceRate'])}%\n강의 코드 ${_displayText(course['courseCode'], emptyMessage: '-')}',
+                            selected:
+                                _asInt(course['courseId']) == selectedCourseId,
+                            onTap: () {
+                              setState(() {
+                                selectedCourseId = _asInt(course['courseId']);
+                                selectedWeekId = null;
+                              });
+                            },
+                          ),
+                        );
+                      }).toList(),
                     ),
             ),
             const SizedBox(height: 16),
@@ -1543,95 +1540,231 @@ class StudentContentPage extends StatefulWidget {
 }
 
 class _StudentContentPageState extends State<StudentContentPage> {
+  int? selectedCourseId;
+
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<ApiResponse<Map<String, dynamic>>>(
-      future: widget.controller.api.getContentDetail(5001),
+    return FutureBuilder<ApiResponse<List<Map<String, dynamic>>>>(
+      future: widget.controller.api.getMyCourses(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData)
+        if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
-        final content = snapshot.data!.data!;
-        final myProgress =
-            (content['myProgress'] as Map<String, dynamic>?) ?? const {};
-        final watchedSeconds = _asInt(myProgress['lastPositionSeconds']);
-        final durationSeconds = _asInt(content['durationSeconds']);
-        final progressRate = _asInt(myProgress['progressRate']);
-        final isCompleted =
-            myProgress['isCompleted'] == true || progressRate >= 100;
+        }
+        final courses = snapshot.data!.data ?? [];
+        if (selectedCourseId == null && courses.isNotEmpty) {
+          selectedCourseId = _asInt(courses.first['courseId']);
+        }
         return ListView(
           children: [
             const DashboardHeroCard(
               title: '콘텐츠 및 진도',
-              subtitle: '시청 기록은 자동 저장됩니다. 학습자는 재생만 하면 됩니다.',
+              subtitle: '내 강의별 진행상황과 최근 학습한 콘텐츠를 함께 확인할 수 있습니다.',
             ),
             const SizedBox(height: 16),
-            InfoCard(
-              title: _displayText(content['title'], emptyMessage: '콘텐츠 제목 미정'),
-              content:
-                  '${_displayText(content['description'], emptyMessage: '콘텐츠 설명이 아직 없습니다.')} ($durationSeconds초)',
+            SectionPanel(
+              title: '내 강의 선택',
+              child: courses.isEmpty
+                  ? const EmptyStateCard(
+                      title: '수강 중인 강의가 없습니다',
+                      description: '강의 신청 메뉴에서 강의를 등록하면 여기서 진도를 볼 수 있습니다.',
+                    )
+                  : Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: courses
+                          .map(
+                            (course) => SizedBox(
+                              width: 260,
+                              child: _SelectionCard(
+                                title: _displayText(course['title']),
+                                description:
+                                    '진도 ${_asInt(course['progressRate'])}% · 출석 ${_asInt(course['attendanceRate'])}%',
+                                selected: _asInt(course['courseId']) ==
+                                    selectedCourseId,
+                                onTap: () => setState(
+                                  () => selectedCourseId =
+                                      _asInt(course['courseId']),
+                                ),
+                              ),
+                            ),
+                          )
+                          .toList(),
+                    ),
             ),
-            const SizedBox(height: 14),
-            Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFD8E6E2)),
+            const SizedBox(height: 16),
+            if (selectedCourseId != null)
+              _StudentCourseProgressView(
+                controller: widget.controller,
+                courseId: selectedCourseId!,
               ),
+            const SizedBox(height: 10),
+            const EndpointChip(label: 'GET ${Endpoints.coursesMy}'),
+            EndpointChip(label: 'GET ${Endpoints.courseLearningLogs(101)}'),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _StudentCourseProgressView extends StatelessWidget {
+  const _StudentCourseProgressView({
+    required this.controller,
+    required this.courseId,
+  });
+
+  final AppController controller;
+  final int courseId;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<ApiResponse<dynamic>>>(
+      future: Future.wait<ApiResponse<dynamic>>([
+        controller.api.getCourseDetail(courseId),
+        controller.api.getMyLearningLogs(courseId),
+      ]),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final course = snapshot.data![0].data as Map<String, dynamic>? ?? {};
+        final logs =
+            snapshot.data![1].data as List<Map<String, dynamic>>? ?? [];
+        final completedCount =
+            logs.where((item) => item['isCompleted'] == true).length;
+        final averageProgress = logs.isEmpty
+            ? 0
+            : (logs
+                        .map((item) => _asInt(item['progressRate']))
+                        .reduce((a, b) => a + b) /
+                    logs.length)
+                .round();
+        final recentLogs = [...logs]..sort(
+            (a, b) => _asInt(b['contentId']).compareTo(_asInt(a['contentId'])));
+
+        return Column(
+          children: [
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                MetricCard(
+                  label: '평균 진행률',
+                  value: '$averageProgress%',
+                  tone: _statusToneFor(
+                    '상태',
+                    averageProgress >= 80
+                        ? '안정'
+                        : averageProgress >= 50
+                            ? '관찰 필요'
+                            : '주의 필요',
+                  ),
+                ),
+                MetricCard(label: '완료 콘텐츠', value: '$completedCount개'),
+                MetricCard(
+                    label: '최근 학습', value: '${recentLogs.take(3).length}건'),
+              ],
+            ),
+            const SizedBox(height: 16),
+            SectionPanel(
+              title: '진행상황 요약',
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        '현재 시청 상태',
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w700),
-                      ),
-                      Text(
-                        isCompleted ? '시청 완료' : '시청 중',
-                        style: TextStyle(
-                          color: isCompleted
-                              ? const Color(0xFF0E7A66)
-                              : const Color(0xFF4A6570),
-                          fontWeight: FontWeight.w700,
+                  InfoCard(
+                    title: _displayText(course['title']),
+                    content:
+                        '${_displayText(course['description'], emptyMessage: '강의 설명이 아직 없습니다.')}\n담당 교수 ${_displayText((course['instructor'] as Map<String, dynamic>?)?['name'], emptyMessage: '미정')}',
+                  ),
+                  if (recentLogs.isEmpty)
+                    const EmptyStateCard(
+                      title: '최근 학습 내역이 없습니다',
+                      description: '콘텐츠를 시청하면 최근 들은 기록과 진행상황이 여기에 표시됩니다.',
+                    )
+                  else
+                    ...recentLogs.take(5).map(
+                          (log) => Container(
+                            margin: const EdgeInsets.only(bottom: 10),
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              border:
+                                  Border.all(color: const Color(0xFFDCE8E4)),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        _displayText(log['title']),
+                                        style: const TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                    ),
+                                    _StatusChip(
+                                      label: '유형',
+                                      value: _displayText(log['type'],
+                                          emptyMessage: '자료'),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(999),
+                                  child: LinearProgressIndicator(
+                                    minHeight: 9,
+                                    value: (_asInt(log['progressRate'])
+                                            .clamp(0, 100)) /
+                                        100,
+                                    backgroundColor: const Color(0xFFE8F0ED),
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      _statusToneFor(
+                                        '상태',
+                                        log['isCompleted'] == true
+                                            ? '안정'
+                                            : '관찰 필요',
+                                      ).foreground,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: [
+                                    _StatusChip(
+                                      label: '진도',
+                                      value: '${_asInt(log['progressRate'])}%',
+                                    ),
+                                    _StatusChip(
+                                      label: '학습 상태',
+                                      value: log['isCompleted'] == true
+                                          ? '완료'
+                                          : '진행 중',
+                                    ),
+                                    if (_displayText(
+                                      log['attendanceStatus'],
+                                      emptyMessage: '',
+                                    ).isNotEmpty)
+                                      _StatusChip(
+                                        label: '출석',
+                                        value: _displayText(
+                                            log['attendanceStatus']),
+                                      ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(999),
-                    child: LinearProgressIndicator(
-                      minHeight: 10,
-                      value: (progressRate.clamp(0, 100)) / 100,
-                      backgroundColor: const Color(0xFFE4EFEC),
-                      valueColor:
-                          const AlwaysStoppedAnimation(Color(0xFF0E7A66)),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    '진도 $progressRate% · $watchedSeconds초 시청',
-                    style: const TextStyle(
-                      color: Color(0xFF516168),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    isCompleted
-                        ? '콘텐츠를 끝까지 시청했습니다.'
-                        : '마지막 시청 위치부터 이어서 학습할 수 있습니다.',
-                    style: const TextStyle(color: Color(0xFF75848A)),
-                  ),
                 ],
               ),
             ),
-            const SizedBox(height: 10),
-            EndpointChip(label: 'GET ${Endpoints.contentDetail(5001)}'),
-            EndpointChip(label: 'POST ${Endpoints.contentProgress(5001)}'),
           ],
         );
       },
