@@ -52,6 +52,7 @@ class Endpoints {
   static const String authLogin = '$baseUrl/auth/login';
   static const String coursesMy = '$baseUrl/courses/my';
   static const String courses = '$baseUrl/courses';
+  static const String enrollByCode = '$baseUrl/courses/enroll-by-code';
   static const String dashboardStudent = '$baseUrl/dashboard/student';
   static const String reportsMe = '$baseUrl/reports/me';
   static const String teamsMe = '$baseUrl/teams/me';

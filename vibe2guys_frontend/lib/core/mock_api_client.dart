@@ -97,6 +97,8 @@ class MockApiClient implements ApiClient {
           'description': 'AI 개론 수업',
           'thumbnailUrl': 'https://images.example.com/course-101',
           'instructorName': '김교수',
+          'courseCode': 'CRS-AI000101',
+          'isPublic': true,
           'progressRate': 72,
           'attendanceRate': 85,
           'assignmentPendingCount': 2,
@@ -107,11 +109,55 @@ class MockApiClient implements ApiClient {
           'description': '문제 해결을 위한 데이터 사고 훈련',
           'thumbnailUrl': 'https://images.example.com/course-102',
           'instructorName': '이교수',
+          'courseCode': 'CRS-DT000102',
+          'isPublic': false,
           'progressRate': 41,
           'attendanceRate': 66,
           'assignmentPendingCount': 1,
         },
       ],
+    );
+  }
+
+  @override
+  Future<ApiResponse<List<Map<String, dynamic>>>> getCourses(
+      {String? keyword}) async {
+    final unauthorized = _unauthorized<List<Map<String, dynamic>>>();
+    if (unauthorized != null) return unauthorized;
+    await Future<void>.delayed(const Duration(milliseconds: 180));
+    final normalized = (keyword ?? '').trim().toLowerCase();
+    const courses = [
+      {
+        'courseId': 301,
+        'title': '생성형 AI 입문',
+        'description': '생성형 AI의 개념과 활용 사례를 다룹니다.',
+        'thumbnailUrl': 'https://images.example.com/course-301',
+        'instructorName': '김교수',
+        'courseCode': 'CRS-A1B2C3D4',
+        'isPublic': true,
+        'isEnrolled': false,
+      },
+      {
+        'courseId': 302,
+        'title': '데이터 사고법',
+        'description': '데이터로 문제를 정의하고 해결하는 방법을 배웁니다.',
+        'thumbnailUrl': 'https://images.example.com/course-302',
+        'instructorName': '이교수',
+        'courseCode': 'CRS-E5F6G7H8',
+        'isPublic': true,
+        'isEnrolled': false,
+      },
+    ];
+    final filtered = normalized.isEmpty
+        ? courses
+        : courses
+            .where((course) =>
+                '${course['title']}'.toLowerCase().contains(normalized))
+            .toList();
+    return ApiResponse(
+      success: true,
+      message: '강의 목록 조회 성공',
+      data: filtered,
     );
   }
 
@@ -123,14 +169,63 @@ class MockApiClient implements ApiClient {
     required String startDate,
     required String endDate,
     required bool isSequentialRelease,
+    required bool isPublic,
   }) async {
     final unauthorized = _unauthorized<Map<String, dynamic>>();
     if (unauthorized != null) return unauthorized;
     await Future<void>.delayed(const Duration(milliseconds: 220));
-    return const ApiResponse(
+    return ApiResponse(
       success: true,
       message: '강의 생성 완료',
-      data: {'courseId': 201, 'title': '새 강의'},
+      data: {
+        'courseId': 201,
+        'title': title,
+        'courseCode': 'CRS-Z9Y8X7W6',
+        'isPublic': isPublic,
+      },
+    );
+  }
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> enrollCourse({
+    required int courseId,
+  }) async {
+    final unauthorized = _unauthorized<Map<String, dynamic>>();
+    if (unauthorized != null) return unauthorized;
+    await Future<void>.delayed(const Duration(milliseconds: 160));
+    return ApiResponse(
+      success: true,
+      message: '수강 신청 완료',
+      data: {
+        'courseId': courseId,
+        'userId': _currentUser!.userId,
+        'status': 'ENROLLED'
+      },
+    );
+  }
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> enrollCourseByCode({
+    required String courseCode,
+  }) async {
+    final unauthorized = _unauthorized<Map<String, dynamic>>();
+    if (unauthorized != null) return unauthorized;
+    await Future<void>.delayed(const Duration(milliseconds: 160));
+    if (courseCode.trim().isEmpty) {
+      return const ApiResponse(
+        success: false,
+        message: '강의 코드를 입력해주세요.',
+        errorCode: 'INVALID_INPUT',
+      );
+    }
+    return ApiResponse(
+      success: true,
+      message: '강의 코드 등록 완료',
+      data: {
+        'courseId': 303,
+        'userId': _currentUser!.userId,
+        'status': 'ENROLLED'
+      },
     );
   }
 
@@ -147,6 +242,8 @@ class MockApiClient implements ApiClient {
         'courseId': courseId,
         'title': 'AI 기초',
         'description': 'AI 개론 수업입니다.',
+        'courseCode': 'CRS-AI000101',
+        'isPublic': true,
         'instructor': {'userId': 20, 'name': '김교수'},
         'startDate': '2026-04-10',
         'endDate': '2026-06-30',

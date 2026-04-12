@@ -125,6 +125,16 @@ class HttpApiClient implements ApiClient {
       _getList('/courses/my');
 
   @override
+  Future<ApiResponse<List<Map<String, dynamic>>>> getCourses(
+      {String? keyword}) {
+    final normalized = keyword?.trim() ?? '';
+    final path = normalized.isEmpty
+        ? '/courses'
+        : '/courses?keyword=${Uri.encodeQueryComponent(normalized)}';
+    return _getList(path);
+  }
+
+  @override
   Future<ApiResponse<Map<String, dynamic>>> createCourse({
     required String title,
     required String description,
@@ -132,6 +142,7 @@ class HttpApiClient implements ApiClient {
     required String startDate,
     required String endDate,
     required bool isSequentialRelease,
+    required bool isPublic,
   }) {
     return _postMap(
       '/courses',
@@ -142,7 +153,25 @@ class HttpApiClient implements ApiClient {
         'startDate': startDate,
         'endDate': endDate,
         'isSequentialRelease': isSequentialRelease,
+        'isPublic': isPublic,
       },
+    );
+  }
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> enrollCourse({
+    required int courseId,
+  }) {
+    return _postMap('/courses/$courseId/enrollments', body: const {});
+  }
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> enrollCourseByCode({
+    required String courseCode,
+  }) {
+    return _postMap(
+      '/courses/enroll-by-code',
+      body: {'courseCode': courseCode},
     );
   }
 
@@ -673,11 +702,24 @@ class HttpApiClient implements ApiClient {
     Map<String, dynamic>? body,
   }) async {
     if (path == '/courses/my') return _fallback.getMyCourses();
+    if (path == '/courses') return _fallback.getCourses();
+    if (path.startsWith('/courses?')) {
+      final uri = Uri.parse('http://localhost$path');
+      return _fallback.getCourses(keyword: uri.queryParameters['keyword']);
+    }
+    if (path == '/courses/enroll-by-code') {
+      return _fallback.enrollCourseByCode(
+        courseCode: (body?['courseCode'] as String?) ?? '',
+      );
+    }
     if (path.startsWith('/courses/') && path.endsWith('/assignments')) {
       return _fallback.getCourseAssignments(_extractId(path));
     }
     if (path.startsWith('/courses/') && path.endsWith('/quizzes')) {
       return _fallback.getCourseQuizzes(_extractId(path));
+    }
+    if (path.startsWith('/courses/') && path.endsWith('/enrollments')) {
+      return _fallback.enrollCourse(courseId: _extractId(path));
     }
     if (path.startsWith('/courses/') && path.endsWith('/students')) {
       return _fallback.getCourseStudents(_extractId(path));

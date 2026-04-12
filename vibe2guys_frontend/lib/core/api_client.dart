@@ -20,6 +20,7 @@ abstract class ApiClient {
   Future<void> logout();
 
   Future<ApiResponse<List<Map<String, dynamic>>>> getMyCourses();
+  Future<ApiResponse<List<Map<String, dynamic>>>> getCourses({String? keyword});
   Future<ApiResponse<Map<String, dynamic>>> createCourse({
     required String title,
     required String description,
@@ -27,6 +28,12 @@ abstract class ApiClient {
     required String startDate,
     required String endDate,
     required bool isSequentialRelease,
+    required bool isPublic,
+  });
+  Future<ApiResponse<Map<String, dynamic>>> enrollCourse(
+      {required int courseId});
+  Future<ApiResponse<Map<String, dynamic>>> enrollCourseByCode({
+    required String courseCode,
   });
   Future<ApiResponse<Map<String, dynamic>>> getCourseDetail(int courseId);
   Future<ApiResponse<List<Map<String, dynamic>>>> getCourseStudents(

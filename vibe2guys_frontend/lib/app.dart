@@ -945,49 +945,229 @@ class StudentDashboardPage extends StatelessWidget {
   }
 }
 
-class StudentCoursesPage extends StatelessWidget {
+class StudentCoursesPage extends StatefulWidget {
   const StudentCoursesPage({super.key, required this.controller});
   final AppController controller;
 
   @override
+  State<StudentCoursesPage> createState() => _StudentCoursesPageState();
+}
+
+class _StudentCoursesPageState extends State<StudentCoursesPage> {
+  final TextEditingController searchController = TextEditingController();
+  final TextEditingController courseCodeController = TextEditingController();
+  int refreshSeed = 0;
+  bool enrollingByCode = false;
+  Set<int> enrollingCourseIds = <int>{};
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    courseCodeController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return FutureBuilder<ApiResponse<List<Map<String, dynamic>>>>(
-      future: controller.api.getMyCourses(),
+    return FutureBuilder<List<ApiResponse<dynamic>>>(
+      key: ValueKey(refreshSeed),
+      future: Future.wait<ApiResponse<dynamic>>([
+        widget.controller.api.getMyCourses(),
+        widget.controller.api.getCourses(keyword: searchController.text.trim()),
+      ]),
       builder: (context, snapshot) {
-        if (!snapshot.hasData)
+        if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
-        final courses = snapshot.data!.data ?? [];
+        }
+        final myCourses =
+            snapshot.data![0].data as List<Map<String, dynamic>>? ?? [];
+        final discoverCourses =
+            snapshot.data![1].data as List<Map<String, dynamic>>? ?? [];
         return ListView(
           children: [
             DashboardHeroCard(
-              title: '내 강의 목록',
-              subtitle: courses.isEmpty
-                  ? '아직 수강 중인 강의가 없습니다.'
-                  : '수강 중인 강의 현황을 한눈에 확인할 수 있습니다.',
+              title: '강의',
+              subtitle: myCourses.isEmpty
+                  ? '강의 코드를 입력하거나 공개 강의를 찾아 바로 등록할 수 있습니다.'
+                  : '수강 중인 강의를 확인하고 새 공개 강의도 바로 찾아 등록할 수 있습니다.',
             ),
             const SizedBox(height: 16),
-            if (courses.isEmpty)
-              const EmptyStateCard(
-                title: '수강 중인 강의가 없습니다',
-                description: '강의에 등록되면 이 화면에서 진도와 출석 현황을 볼 수 있습니다.',
-              )
-            else
-              ...courses.map(
-                (course) => InfoCard(
-                  title: _displayText(course['title'], emptyMessage: '제목 미정'),
-                  content:
-                      '진도 ${_asInt(course['progressRate'])}% | 출석 ${_asInt(course['attendanceRate'])}% | 미제출 ${_asInt(course['assignmentPendingCount'])}개',
-                ),
+            SectionPanel(
+              title: '강의 코드로 등록',
+              child: Column(
+                children: [
+                  _AuthTextField(
+                    controller: courseCodeController,
+                    label: '강의 코드',
+                    hintText: '예: CRS-A1B2C3D4',
+                  ),
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: FilledButton(
+                      onPressed: enrollingByCode ? null : _enrollByCode,
+                      child: Text(enrollingByCode ? '등록 중...' : '코드로 등록'),
+                    ),
+                  ),
+                ],
               ),
+            ),
+            const SizedBox(height: 16),
+            SectionPanel(
+              title: '공개 강의 찾기',
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _AuthTextField(
+                          controller: searchController,
+                          label: '강의 제목 검색',
+                          hintText: '예: 생성형 AI',
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      FilledButton.tonal(
+                        onPressed: () => setState(() => refreshSeed++),
+                        child: const Text('검색'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  if (discoverCourses.isEmpty)
+                    const EmptyStateCard(
+                      title: '검색된 공개 강의가 없습니다',
+                      description: '강의 제목을 바꿔 검색해보세요.',
+                    )
+                  else
+                    ...discoverCourses
+                        .map((course) => _buildDiscoverCourse(course)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            SectionPanel(
+              title: '내 강의 목록',
+              child: myCourses.isEmpty
+                  ? const EmptyStateCard(
+                      title: '수강 중인 강의가 없습니다',
+                      description: '공개 강의 검색 또는 강의 코드 등록으로 수업을 시작할 수 있습니다.',
+                    )
+                  : Column(
+                      children: myCourses
+                          .map(
+                            (course) => InfoCard(
+                              title: _displayText(course['title'],
+                                  emptyMessage: '제목 미정'),
+                              content:
+                                  '진도 ${_asInt(course['progressRate'])}% | 출석 ${_asInt(course['attendanceRate'])}% | 미제출 ${_asInt(course['assignmentPendingCount'])}개 | 강의 코드 ${_displayText(course['courseCode'], emptyMessage: '-')}',
+                            ),
+                          )
+                          .toList(),
+                    ),
+            ),
             const SizedBox(height: 10),
             const EndpointChip(label: 'GET ${Endpoints.coursesMy}'),
-            EndpointChip(label: 'GET ${Endpoints.courseDetail(101)}'),
-            EndpointChip(label: 'GET ${Endpoints.courseAssignments(101)}'),
-            EndpointChip(label: 'GET ${Endpoints.courseQuizzes(101)}'),
+            const EndpointChip(label: 'GET ${Endpoints.courses}'),
+            const EndpointChip(label: 'POST ${Endpoints.enrollByCode}'),
+            EndpointChip(
+                label: 'POST ${Endpoints.courseDetail(101)}/enrollments'),
           ],
         );
       },
     );
+  }
+
+  Widget _buildDiscoverCourse(Map<String, dynamic> course) {
+    final courseId = _asInt(course['courseId']);
+    final isEnrolled = course['isEnrolled'] == true;
+    final isPublic = course['isPublic'] == true;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFDCE8E4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _displayText(course['title']),
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w800),
+                ),
+              ),
+              _StatusChip(label: '구분', value: isPublic ? '공개' : '비공개'),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _displayText(course['description'], emptyMessage: '강의 설명이 없습니다.'),
+            style: const TextStyle(color: Color(0xFF64757B), height: 1.5),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '담당 교수 ${_displayText(course['instructorName'])} · 강의 코드 ${_displayText(course['courseCode'], emptyMessage: '-')}',
+            style: const TextStyle(color: Color(0xFF64757B)),
+          ),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: FilledButton.tonal(
+              onPressed: isEnrolled || enrollingCourseIds.contains(courseId)
+                  ? null
+                  : () => _enrollCourse(courseId),
+              child: Text(
+                isEnrolled
+                    ? '이미 등록됨'
+                    : enrollingCourseIds.contains(courseId)
+                        ? '등록 중...'
+                        : '수강신청',
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _enrollCourse(int courseId) async {
+    setState(() {
+      enrollingCourseIds = {...enrollingCourseIds, courseId};
+    });
+    final response =
+        await widget.controller.api.enrollCourse(courseId: courseId);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(response.message)));
+    setState(() {
+      enrollingCourseIds.remove(courseId);
+      refreshSeed++;
+    });
+  }
+
+  Future<void> _enrollByCode() async {
+    setState(() {
+      enrollingByCode = true;
+    });
+    final response = await widget.controller.api.enrollCourseByCode(
+      courseCode: courseCodeController.text.trim(),
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(response.message)));
+    setState(() {
+      enrollingByCode = false;
+      if (response.success) {
+        courseCodeController.clear();
+        refreshSeed++;
+      }
+    });
   }
 }
 
@@ -1628,6 +1808,7 @@ class _InstructorCourseManagementPageState
   int? selectedWeekId;
   String selectedContentType = 'VOD';
   bool isSequentialRelease = false;
+  bool isPublicCourse = true;
   bool uploadingVideo = false;
   bool uploadingThumbnail = false;
   bool uploadingDocument = false;
@@ -1737,6 +1918,18 @@ class _InstructorCourseManagementPageState
                     onChanged: (value) =>
                         setState(() => isSequentialRelease = value),
                   ),
+                  SwitchListTile(
+                    value: isPublicCourse,
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('공개 강의'),
+                    subtitle: Text(
+                      isPublicCourse
+                          ? '누구나 강의 제목으로 찾아 수강신청할 수 있습니다.'
+                          : '강의 코드를 가진 학생만 등록할 수 있습니다.',
+                    ),
+                    onChanged: (value) =>
+                        setState(() => isPublicCourse = value),
+                  ),
                   const SizedBox(height: 12),
                   Align(
                     alignment: Alignment.centerLeft,
@@ -1767,7 +1960,7 @@ class _InstructorCourseManagementPageState
                                 title: _displayText(course['title'],
                                     emptyMessage: '제목 미정'),
                                 description:
-                                    '진도 ${_asInt(course['progressRate'])}% · 출석 ${_asInt(course['attendanceRate'])}%',
+                                    '진도 ${_asInt(course['progressRate'])}% · 출석 ${_asInt(course['attendanceRate'])}%\n강의 코드 ${_displayText(course['courseCode'], emptyMessage: '-')} · ${course['isPublic'] == true ? '공개' : '비공개'}',
                                 selected: _asInt(course['courseId']) ==
                                     selectedCourseId,
                                 onTap: () {
@@ -1949,7 +2142,7 @@ class _InstructorCourseManagementPageState
                   children: [
                     FilledButton.tonal(
                       onPressed: uploadingVideo ? null : _pickAndUploadVideo,
-                      child: Text(uploadingVideo ? '업로드 중...' : 'S3에 영상 올리기'),
+                      child: Text(uploadingVideo ? '업로드 중...' : '영상 올리기'),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -2060,6 +2253,7 @@ class _InstructorCourseManagementPageState
       startDate: courseStartDateController.text.trim(),
       endDate: courseEndDateController.text.trim(),
       isSequentialRelease: isSequentialRelease,
+      isPublic: isPublicCourse,
     );
     _notify(response.message);
     if (!response.success) return;
