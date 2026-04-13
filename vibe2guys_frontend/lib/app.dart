@@ -1007,6 +1007,7 @@ class StudentDashboardPage extends StatelessWidget {
         controller.api.getStudentDashboard(),
         controller.api.getMyReport(),
         controller.api.getRecommendations(controller.user!.userId),
+        controller.api.getMyCourses(),
       ]),
       builder: (context, snapshot) {
         if (!snapshot.hasData)
@@ -1015,6 +1016,7 @@ class StudentDashboardPage extends StatelessWidget {
         final dashboard = responses[0].data as Map<String, dynamic>;
         final report = responses[1].data as Map<String, dynamic>;
         final recommendations = responses[2].data as Map<String, dynamic>;
+        final courses = responses[3].data as List<Map<String, dynamic>>? ?? [];
         final recommendedActions =
             _asStringList(recommendations['recommendedActions']);
 
@@ -1069,6 +1071,135 @@ class StudentDashboardPage extends StatelessWidget {
                   ? '추천할 학습 액션이 아직 없습니다.'
                   : recommendedActions.join(' / '),
             ),
+            const SizedBox(height: 16),
+            SectionPanel(
+              title: '내 강의 빠른 보기',
+              child: courses.isEmpty
+                  ? const EmptyStateCard(
+                      title: '수강 중인 강의가 없습니다',
+                      description: '강의 신청 메뉴에서 강의를 등록하면 첫 화면에 요약이 표시됩니다.',
+                    )
+                  : Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: courses
+                          .take(3)
+                          .map(
+                            (course) => SizedBox(
+                              width: 260,
+                              child: _SelectionCard(
+                                title: _displayText(course['title']),
+                                description:
+                                    '진도 ${_asInt(course['progressRate'])}% · 출석 ${_asInt(course['attendanceRate'])}%\n미제출 ${_asInt(course['assignmentPendingCount'])}개',
+                                selected: false,
+                                onTap: () {
+                                  controller.setSelectedIndex(1);
+                                },
+                              ),
+                            ),
+                          )
+                          .toList(),
+                    ),
+            ),
+            if (courses.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              FutureBuilder<List<ApiResponse<dynamic>>>(
+                future: Future.wait<ApiResponse<dynamic>>(
+                  courses.take(2).map(
+                        (course) => controller.api
+                            .getCourseHome(_asInt(course['courseId'])),
+                      ),
+                ),
+                builder: (context, homeSnapshot) {
+                  if (!homeSnapshot.hasData) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  final homes = homeSnapshot.data!
+                      .map((item) => item.data as Map<String, dynamic>? ?? {})
+                      .toList();
+                  final flattenedTodos = homes
+                      .expand(
+                        (home) =>
+                            ((home['todos'] as List<dynamic>?) ?? const [])
+                                .whereType<Map<String, dynamic>>()
+                                .map(
+                                  (todo) => {
+                                    ...todo,
+                                    'courseTitle': home['title'],
+                                  },
+                                ),
+                      )
+                      .toList()
+                    ..sort(
+                      (a, b) => _displayText(a['scheduleAt'])
+                          .compareTo(_displayText(b['scheduleAt'])),
+                    );
+                  final announcements = homes
+                      .expand(
+                        (home) => ((home['announcements'] as List<dynamic>?) ??
+                                const [])
+                            .whereType<Map<String, dynamic>>()
+                            .map(
+                              (announcement) => {
+                                ...announcement,
+                                'courseTitle': home['title'],
+                              },
+                            ),
+                      )
+                      .toList();
+                  return Column(
+                    children: [
+                      SectionPanel(
+                        title: '다가오는 일정과 할 일',
+                        child: flattenedTodos.isEmpty
+                            ? const EmptyStateCard(
+                                title: '예정된 일정이 없습니다',
+                                description:
+                                    '과제, 퀴즈, 콘텐츠 오픈 일정이 생기면 여기에 표시됩니다.',
+                              )
+                            : Column(
+                                children: flattenedTodos
+                                    .take(5)
+                                    .map(
+                                      (todo) => InfoCard(
+                                        title:
+                                            '${_displayText(todo['courseTitle'])} · ${_displayText(todo['title'])}',
+                                        content:
+                                            '${_displayText(todo['status'])} · ${_displayText(todo['scheduleAt'])}',
+                                      ),
+                                    )
+                                    .toList(),
+                              ),
+                      ),
+                      const SizedBox(height: 16),
+                      SectionPanel(
+                        title: '최근 공지',
+                        child: announcements.isEmpty
+                            ? const EmptyStateCard(
+                                title: '새 공지가 없습니다',
+                                description:
+                                    '교수자가 공지를 등록하면 여기에 강의별로 모아서 보여줍니다.',
+                              )
+                            : Column(
+                                children: announcements
+                                    .take(4)
+                                    .map(
+                                      (announcement) => InfoCard(
+                                        title:
+                                            '${_displayText(announcement['courseTitle'])} · ${_displayText(announcement['title'])}',
+                                        content: _displayText(
+                                          announcement['body'],
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
+                              ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ],
           ],
         );
       },
@@ -2658,39 +2789,181 @@ class InstructorDashboardPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<ApiResponse<Map<String, dynamic>>>(
-      future: controller.api.getInstructorDashboard(101),
+    return FutureBuilder<ApiResponse<List<Map<String, dynamic>>>>(
+      future: controller.api.getMyCourses(),
       builder: (context, snapshot) {
         if (!snapshot.hasData)
           return const Center(child: CircularProgressIndicator());
-        final data = snapshot.data!.data!;
+        final courses = snapshot.data!.data ?? [];
+        final selectedCourseId =
+            courses.isEmpty ? null : _asInt(courses.first['courseId']);
         return ListView(
           children: [
             const DashboardHeroCard(
               title: '교수자 대시보드',
-              subtitle: '강의 전체 현황과 주의가 필요한 학생 수를 빠르게 확인할 수 있습니다.',
+              subtitle: '강의 운영 현황, 공지, 미채점 과제를 강의 단위로 빠르게 확인할 수 있습니다.',
             ),
             const SizedBox(height: 18),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                MetricCard(
-                    label: '수강생', value: '${_asInt(data['studentCount'])}'),
-                MetricCard(
-                    label: '평균 출석',
-                    value: '${_asInt(data['averageAttendanceRate'])}%'),
-                MetricCard(
-                    label: '고위험 학생',
-                    value: '${_asInt(data['highRiskStudentCount'])}'),
-                MetricCard(
-                  label: '저이해 학생',
-                  value: '${_asInt(data['lowUnderstandingStudentCount'])}',
+            if (courses.isEmpty)
+              const EmptyStateCard(
+                title: '담당 강의가 없습니다',
+                description: '강의를 만들면 운영 요약이 이곳에 표시됩니다.',
+              )
+            else ...[
+              SectionPanel(
+                title: '운영 중인 강의',
+                child: Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: courses
+                      .take(4)
+                      .map(
+                        (course) => SizedBox(
+                          width: 260,
+                          child: _SelectionCard(
+                            title: _displayText(course['title']),
+                            description:
+                                '진도 ${_asInt(course['progressRate'])}% · 출석 ${_asInt(course['attendanceRate'])}%\n강의 코드 ${_displayText(course['courseCode'])}',
+                            selected: false,
+                            onTap: () => controller.setSelectedIndex(2),
+                          ),
+                        ),
+                      )
+                      .toList(),
                 ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            EndpointChip(label: 'GET ${Endpoints.instructorDashboard(101)}'),
+              ),
+              const SizedBox(height: 16),
+              if (selectedCourseId != null)
+                FutureBuilder<List<ApiResponse<dynamic>>>(
+                  future: Future.wait<ApiResponse<dynamic>>([
+                    controller.api.getInstructorDashboard(selectedCourseId),
+                    controller.api.getCourseHome(selectedCourseId),
+                    controller.api.getCourseAssignments(selectedCourseId),
+                  ]),
+                  builder: (context, detailSnapshot) {
+                    if (!detailSnapshot.hasData) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    final dashboard =
+                        detailSnapshot.data![0].data as Map<String, dynamic>? ??
+                            {};
+                    final home =
+                        detailSnapshot.data![1].data as Map<String, dynamic>? ??
+                            {};
+                    final assignments = detailSnapshot.data![2].data
+                            as List<Map<String, dynamic>>? ??
+                        [];
+                    return FutureBuilder<List<ApiResponse<dynamic>>>(
+                      future: Future.wait<ApiResponse<dynamic>>(
+                        assignments.take(4).map(
+                              (assignment) => controller.api
+                                  .getAssignmentSubmissions(
+                                      _asInt(assignment['assignmentId'])),
+                            ),
+                      ),
+                      builder: (context, submissionSnapshot) {
+                        if (!submissionSnapshot.hasData) {
+                          return const Center(
+                              child: CircularProgressIndicator());
+                        }
+                        final pendingGrading = submissionSnapshot.data!
+                            .expand((item) =>
+                                item.data as List<Map<String, dynamic>>? ?? [])
+                            .where((submission) => submission['score'] == null)
+                            .length;
+                        final announcements =
+                            ((home['announcements'] as List<dynamic>?) ??
+                                    const [])
+                                .whereType<Map<String, dynamic>>()
+                                .toList();
+                        final todos =
+                            ((home['todos'] as List<dynamic>?) ?? const [])
+                                .whereType<Map<String, dynamic>>()
+                                .toList();
+                        return Column(
+                          children: [
+                            Wrap(
+                              spacing: 12,
+                              runSpacing: 12,
+                              children: [
+                                MetricCard(
+                                  label: '수강생',
+                                  value: '${_asInt(dashboard['studentCount'])}',
+                                ),
+                                MetricCard(
+                                  label: '평균 출석',
+                                  value:
+                                      '${_asInt(dashboard['averageAttendanceRate'])}%',
+                                ),
+                                MetricCard(
+                                  label: '미채점 제출',
+                                  value: '$pendingGrading',
+                                  tone: _statusToneFor('상태', '관찰 필요'),
+                                ),
+                                MetricCard(
+                                  label: '공지 수',
+                                  value: '${announcements.length}',
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            SectionPanel(
+                              title: '운영 메모',
+                              child: Column(
+                                children: [
+                                  InfoCard(
+                                    title: _displayText(
+                                      home['title'],
+                                      emptyMessage: '선택 강의',
+                                    ),
+                                    content:
+                                        '고위험 학생 ${_asInt(dashboard['highRiskStudentCount'])}명 · 저이해 학생 ${_asInt(dashboard['lowUnderstandingStudentCount'])}명\n최근 학습 ${_displayText(home['recentLearningTitle'], emptyMessage: '아직 없음')}',
+                                  ),
+                                  if (announcements.isNotEmpty)
+                                    InfoCard(
+                                      title: '최근 공지',
+                                      content:
+                                          '${_displayText(announcements.first['title'])}\n${_displayText(announcements.first['body'])}',
+                                    ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            SectionPanel(
+                              title: '강의 일정',
+                              child: todos.isEmpty
+                                  ? const EmptyStateCard(
+                                      title: '정리된 일정이 없습니다',
+                                      description:
+                                          '콘텐츠 오픈 일정이나 과제/퀴즈 일정이 있으면 여기에 표시됩니다.',
+                                    )
+                                  : Column(
+                                      children: todos
+                                          .take(5)
+                                          .map(
+                                            (todo) => InfoCard(
+                                              title:
+                                                  '${_displayText(todo['title'])} · ${_displayText(todo['status'])}',
+                                              content:
+                                                  '${_displayText(todo['summary'])}\n일정 ${_displayText(todo['scheduleAt'])}',
+                                            ),
+                                          )
+                                          .toList(),
+                                    ),
+                            ),
+                            const SizedBox(height: 10),
+                            EndpointChip(
+                                label:
+                                    'GET ${Endpoints.instructorDashboard(101)}'),
+                            EndpointChip(
+                                label: 'GET ${Endpoints.courseHome(101)}'),
+                          ],
+                        );
+                      },
+                    );
+                  },
+                ),
+            ],
           ],
         );
       },
