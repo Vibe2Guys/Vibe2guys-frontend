@@ -877,6 +877,27 @@ class HttpApiClient implements ApiClient {
     if (path.startsWith('/courses/') && path.endsWith('/students')) {
       return _fallback.getCourseStudents(_extractId(path));
     }
+    if (path.startsWith('/courses/') && path.endsWith('/home')) {
+      return _fallback.getCourseHome(_extractId(path));
+    }
+    if (path.startsWith('/courses/') && path.endsWith('/announcements')) {
+      if (body != null) {
+        return _fallback.createCourseAnnouncement(
+          courseId: _extractId(path),
+          title: (body['title'] as String?) ?? '',
+          body: (body['body'] as String?) ?? '',
+          pinned: body['pinned'] == true,
+        );
+      }
+      return _fallback.getCourseAnnouncements(_extractId(path));
+    }
+    if (path.startsWith('/courses/') && path.endsWith('/gradebook/me')) {
+      return _fallback.getMyCourseGradebook(_extractId(path));
+    }
+    if (path.startsWith('/courses/') &&
+        path.endsWith('/gradebook/instructor')) {
+      return _fallback.getInstructorGradebook(_extractId(path));
+    }
     if (RegExp(r'^/courses/\d+/students/\d+/memo$').hasMatch(path)) {
       final ids = RegExp(r'(\d+)')
           .allMatches(path)
@@ -904,7 +925,22 @@ class HttpApiClient implements ApiClient {
     }
     if (path.startsWith('/contents/'))
       return _fallback.getContentDetail(_extractId(path));
+    if (RegExp(r'^/assignments/\d+/submissions/\d+/grade$').hasMatch(path)) {
+      final ids = RegExp(r'(\d+)')
+          .allMatches(path)
+          .map((match) => int.parse(match.group(1)!))
+          .toList();
+      return _fallback.gradeAssignmentSubmission(
+        assignmentId: ids.isNotEmpty ? ids[0] : 0,
+        submissionId: ids.length > 1 ? ids[1] : 0,
+        score: (body?['score'] as num?)?.toInt() ?? 0,
+        feedback: (body?['feedback'] as String?) ?? '',
+      );
+    }
     if (path.startsWith('/assignments/') && path.endsWith('/submissions')) {
+      if (body == null) {
+        return _fallback.getAssignmentSubmissions(_extractId(path));
+      }
       return _fallback.submitAssignment(
         assignmentId: _extractId(path),
         answerText: (body?['answerText'] as String?) ?? '',
@@ -914,6 +950,10 @@ class HttpApiClient implements ApiClient {
       return _fallback.getAssignmentDetail(_extractId(path));
     if (path == '/dashboard/student') return _fallback.getStudentDashboard();
     if (path == '/reports/me') return _fallback.getMyReport();
+    if (path == '/notifications/me') return _fallback.getMyNotifications();
+    if (RegExp(r'^/notifications/\d+/read$').hasMatch(path)) {
+      return _fallback.readNotification(_extractId(path));
+    }
     if (path == '/users/me' && body == null) return _fallback.getMyProfile();
     if (path == '/users/me' && body != null) {
       return _fallback.updateMyProfile(
@@ -922,23 +962,61 @@ class HttpApiClient implements ApiClient {
       );
     }
     if (path == '/teams/me') return _fallback.getMyTeam();
-    if (path == '/chat-rooms/4001/messages')
-      return _fallback.getChatMessages(4001);
+    if (path.startsWith('/teams/') && path.endsWith('/tasks')) {
+      if (body != null) {
+        return _fallback.createTeamTask(
+          teamId: _extractId(path),
+          title: (body['title'] as String?) ?? '',
+          description: (body['description'] as String?) ?? '',
+          assigneeUserId: (body['assigneeUserId'] as num?)?.toInt(),
+          dueAt: body['dueAt'] as String?,
+        );
+      }
+      return _fallback.getTeamTasks(_extractId(path));
+    }
+    if (RegExp(r'^/teams/\d+/tasks/\d+/status$').hasMatch(path)) {
+      final ids = RegExp(r'(\d+)')
+          .allMatches(path)
+          .map((match) => int.parse(match.group(1)!))
+          .toList();
+      return _fallback.updateTeamTaskStatus(
+        teamId: ids.isNotEmpty ? ids[0] : 0,
+        taskId: ids.length > 1 ? ids[1] : 0,
+        status: (body?['status'] as String?) ?? 'TODO',
+      );
+    }
+    if (path.startsWith('/teams/') && path.endsWith('/meeting-notes')) {
+      if (body != null) {
+        return _fallback.createTeamMeetingNote(
+          teamId: _extractId(path),
+          title: (body['title'] as String?) ?? '',
+          noteBody: (body['noteBody'] as String?) ?? '',
+        );
+      }
+      return _fallback.getTeamMeetingNotes(_extractId(path));
+    }
+    if (RegExp(r'^/chat-rooms/\d+/messages$').hasMatch(path)) {
+      return _fallback.getChatMessages(_extractId(path));
+    }
     if (path.startsWith('/teams/') && path.endsWith('/chat-room')) {
       return _fallback.getTeamChatRoom(_extractId(path));
     }
     if (path.startsWith('/teams/'))
       return _fallback.getTeamDetail(_extractId(path));
-    if (path == '/dashboard/instructor/courses/101') {
-      return _fallback.getInstructorDashboard(101);
+    if (path.startsWith('/dashboard/instructor/courses/')) {
+      return _fallback.getInstructorDashboard(_extractId(path));
     }
-    if (path == '/instructors/courses/101/students/risk')
-      return _fallback.getRiskStudents(101);
-    if (path == '/instructors/courses/101/students/understanding-low') {
-      return _fallback.getLowUnderstandingStudents(101);
+    if (path.startsWith('/instructors/courses/') &&
+        path.endsWith('/students/risk')) {
+      return _fallback.getRiskStudents(_extractId(path));
     }
-    if (path == '/instructors/courses/101/interventions') {
-      return _fallback.getInterventions(101);
+    if (path.startsWith('/instructors/courses/') &&
+        path.endsWith('/students/understanding-low')) {
+      return _fallback.getLowUnderstandingStudents(_extractId(path));
+    }
+    if (path.startsWith('/instructors/courses/') &&
+        path.endsWith('/interventions')) {
+      return _fallback.getInterventions(_extractId(path));
     }
     if (path.startsWith('/students/') && path.endsWith('/recommendations')) {
       return _fallback.getRecommendations(_extractId(path));

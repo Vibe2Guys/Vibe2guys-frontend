@@ -2682,384 +2682,441 @@ class _StudentTeamPageState extends State<StudentTeamPage> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<ApiResponse<dynamic>>>(
+    return FutureBuilder<ApiResponse<Map<String, dynamic>>>(
       key: ValueKey(refreshSeed),
-      future: Future.wait<ApiResponse<dynamic>>([
-        widget.controller.api.getMyTeam(),
-        widget.controller.api.getTeamDetail(3001),
-        widget.controller.api.getTeamTasks(3001),
-        widget.controller.api.getTeamMeetingNotes(3001),
-        widget.controller.api.getTeamChatRoom(3001),
-        widget.controller.api.getChatMessages(4001),
-      ]),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
+      future: widget.controller.api.getMyTeam(),
+      builder: (context, teamSnapshot) {
+        if (!teamSnapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
-        final responses = snapshot.data!;
-        final team = responses[0].data as Map<String, dynamic>? ?? {};
-        final detail = responses[1].data as Map<String, dynamic>? ?? {};
-        final tasks = responses[2].data as List<Map<String, dynamic>>? ?? [];
-        final meetingNotes =
-            responses[3].data as List<Map<String, dynamic>>? ?? [];
-        final messages = responses[5].data as List<Map<String, dynamic>>? ?? [];
-        final teamId = _asInt(detail['teamId'] ?? team['teamId']);
-        final defaultTeamName = _displayText(
-          detail['teamName'] ?? detail['name'] ?? team['teamName'],
-          emptyMessage: '배정된 팀이 없습니다',
-        );
-        final displayTeamName =
-            widget.controller.teamAlias(teamId, defaultTeamName);
-        if (aliasController.text.trim().isEmpty && editingAlias == false) {
-          aliasController.text = displayTeamName;
-        }
-        final members = (detail['members'] as List<dynamic>? ?? const [])
-            .whereType<Map<String, dynamic>>()
-            .map((e) => _displayText(e['name'], emptyMessage: '이름 없음'))
-            .toList();
-
-        return ListView(
-          children: [
-            DashboardHeroCard(
-              title: '팀 활동',
-              subtitle: '팀 카드를 눌러 설명, 개인 별칭, 대화창을 한 화면에서 볼 수 있습니다.',
-            ),
-            const SizedBox(height: 16),
-            SectionPanel(
-              title: '내 팀',
-              child: _SelectionCard(
-                title: displayTeamName,
-                description:
-                    '원래 팀명: $defaultTeamName\n협업점수 ${_asInt(detail['collaborationScore'])} · 팀 빌딩 ${_asInt(detail['teamBuildingScore'])}',
-                selected: true,
-                onTap: () {},
+        final team = teamSnapshot.data!.data ?? {};
+        final teamId = _asInt(team['teamId']);
+        if (teamId <= 0) {
+          return ListView(
+            children: const [
+              DashboardHeroCard(
+                title: '팀 활동',
+                subtitle: '배정된 팀이 아직 없으면 팀 활동 화면이 비어 있습니다.',
               ),
-            ),
-            const SizedBox(height: 16),
-            SectionPanel(
-              title: '팀 설명',
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  InfoCard(
-                    title: displayTeamName,
-                    content: _displayText(
-                      detail['matchingSummary'],
-                      emptyMessage: '팀 설명이 아직 없습니다.',
+              SizedBox(height: 16),
+              SectionPanel(
+                title: '내 팀',
+                child: EmptyStateCard(
+                  title: '배정된 팀이 없습니다',
+                  description: '교수자가 팀을 만들면 이곳에서 업무, 회의 메모, 채팅을 볼 수 있습니다.',
+                ),
+              ),
+            ],
+          );
+        }
+        return FutureBuilder<List<ApiResponse<dynamic>>>(
+          future: Future.wait<ApiResponse<dynamic>>([
+            widget.controller.api.getTeamDetail(teamId),
+            widget.controller.api.getTeamTasks(teamId),
+            widget.controller.api.getTeamMeetingNotes(teamId),
+            widget.controller.api.getTeamChatRoom(teamId),
+          ]),
+          builder: (context, detailSnapshot) {
+            if (!detailSnapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            final responses = detailSnapshot.data!;
+            final detail = responses[0].data as Map<String, dynamic>? ?? {};
+            final tasks =
+                responses[1].data as List<Map<String, dynamic>>? ?? [];
+            final meetingNotes =
+                responses[2].data as List<Map<String, dynamic>>? ?? [];
+            final chatRoom = responses[3].data as Map<String, dynamic>? ?? {};
+            final chatRoomId = _asInt(chatRoom['chatRoomId']);
+            return FutureBuilder<ApiResponse<List<Map<String, dynamic>>>>(
+              future: chatRoomId > 0
+                  ? widget.controller.api.getChatMessages(chatRoomId)
+                  : Future.value(const ApiResponse(
+                      success: true,
+                      message: '팀 채팅 메시지 조회 성공',
+                      data: <Map<String, dynamic>>[],
+                    )),
+              builder: (context, messageSnapshot) {
+                if (!messageSnapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final messages = messageSnapshot.data!.data ?? [];
+                final defaultTeamName = _displayText(
+                  detail['teamName'] ?? detail['name'] ?? team['teamName'],
+                  emptyMessage: '배정된 팀이 없습니다',
+                );
+                final displayTeamName =
+                    widget.controller.teamAlias(teamId, defaultTeamName);
+                if (aliasController.text.trim().isEmpty &&
+                    editingAlias == false) {
+                  aliasController.text = displayTeamName;
+                }
+                final members = (detail['members'] as List<dynamic>? ??
+                        const [])
+                    .whereType<Map<String, dynamic>>()
+                    .map((e) => _displayText(e['name'], emptyMessage: '이름 없음'))
+                    .toList();
+
+                return ListView(
+                  children: [
+                    DashboardHeroCard(
+                      title: '팀 활동',
+                      subtitle: '팀 카드를 눌러 설명, 개인 별칭, 대화창을 한 화면에서 볼 수 있습니다.',
                     ),
-                  ),
-                  InfoCard(
-                    title: '팀원 구성',
-                    content: members.isEmpty
-                        ? '아직 팀원 정보가 없습니다.'
-                        : members.join(', '),
-                  ),
-                  const SizedBox(height: 8),
-                  if (editingAlias) ...[
-                    _AuthTextField(
-                      controller: aliasController,
-                      label: '내 화면용 팀명',
-                      hintText: '예: AI 기초 : 발표팀',
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        FilledButton.tonal(
-                          onPressed: () {
-                            widget.controller
-                                .setTeamAlias(teamId, aliasController.text);
-                            setState(() {
-                              editingAlias = false;
-                            });
-                          },
-                          child: const Text('개인 팀명 저장'),
-                        ),
-                        const SizedBox(width: 10),
-                        TextButton(
-                          onPressed: () {
-                            aliasController.text = defaultTeamName;
-                            widget.controller.setTeamAlias(teamId, '');
-                            setState(() {
-                              editingAlias = false;
-                            });
-                          },
-                          child: const Text('원래 팀명으로'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      '이 팀명은 내 화면에만 적용됩니다.',
-                      style: TextStyle(color: Color(0xFF64757B)),
-                    ),
-                  ] else
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: FilledButton.tonal(
-                        onPressed: () {
-                          aliasController.text = displayTeamName;
-                          setState(() {
-                            editingAlias = true;
-                          });
-                        },
-                        child: const Text('개인 팀명 바꾸기'),
+                    const SizedBox(height: 16),
+                    SectionPanel(
+                      title: '내 팀',
+                      child: _SelectionCard(
+                        title: displayTeamName,
+                        description:
+                            '원래 팀명: $defaultTeamName\n협업점수 ${_asInt(detail['collaborationScore'])} · 팀 빌딩 ${_asInt(detail['teamBuildingScore'])}',
+                        selected: true,
+                        onTap: () {},
                       ),
                     ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            SectionPanel(
-              title: '업무 분담',
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _AuthTextField(
-                    controller: taskTitleController,
-                    label: '업무 제목',
-                    hintText: '예: 발표 자료 초안 만들기',
-                  ),
-                  const SizedBox(height: 12),
-                  _AuthTextField(
-                    controller: taskDescriptionController,
-                    label: '업무 설명',
-                    hintText: '이번 업무에서 할 일을 적어주세요',
-                  ),
-                  const SizedBox(height: 12),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: FilledButton.tonal(
-                      onPressed: () async {
-                        final response =
-                            await widget.controller.api.createTeamTask(
-                          teamId: teamId,
-                          title: taskTitleController.text.trim(),
-                          description: taskDescriptionController.text.trim(),
-                        );
-                        if (!context.mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(response.message)),
-                        );
-                        if (response.success) {
-                          setState(() {
-                            refreshSeed++;
-                            taskTitleController.clear();
-                            taskDescriptionController.clear();
-                          });
-                        }
-                      },
-                      child: const Text('업무 추가'),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  if (tasks.isEmpty)
-                    const EmptyStateCard(
-                      title: '배정된 업무가 없습니다',
-                      description: '팀이 해야 할 일을 나누면 여기에서 진행 상태를 볼 수 있습니다.',
-                    )
-                  else
-                    ...tasks.map(
-                      (task) => Container(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFFDCE8E4)),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    _displayText(task['title']),
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    '${_displayText(task['description'], emptyMessage: '설명 없음')}\n담당 ${_displayText(task['assigneeName'], emptyMessage: '미지정')} · 마감 ${_displayText(task['dueAt'], emptyMessage: '미정')}',
-                                    style: const TextStyle(
-                                      color: Color(0xFF64757B),
-                                      height: 1.4,
-                                    ),
-                                  ),
-                                ],
+                    const SizedBox(height: 16),
+                    SectionPanel(
+                      title: '팀 설명',
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          InfoCard(
+                            title: displayTeamName,
+                            content: _displayText(
+                              detail['matchingSummary'],
+                              emptyMessage: '팀 설명이 아직 없습니다.',
+                            ),
+                          ),
+                          InfoCard(
+                            title: '팀원 구성',
+                            content: members.isEmpty
+                                ? '아직 팀원 정보가 없습니다.'
+                                : members.join(', '),
+                          ),
+                          const SizedBox(height: 8),
+                          if (editingAlias) ...[
+                            _AuthTextField(
+                              controller: aliasController,
+                              label: '내 화면용 팀명',
+                              hintText: '예: AI 기초 : 발표팀',
+                            ),
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                FilledButton.tonal(
+                                  onPressed: () {
+                                    widget.controller.setTeamAlias(
+                                        teamId, aliasController.text);
+                                    setState(() {
+                                      editingAlias = false;
+                                    });
+                                  },
+                                  child: const Text('개인 팀명 저장'),
+                                ),
+                                const SizedBox(width: 10),
+                                TextButton(
+                                  onPressed: () {
+                                    aliasController.text = defaultTeamName;
+                                    widget.controller.setTeamAlias(teamId, '');
+                                    setState(() {
+                                      editingAlias = false;
+                                    });
+                                  },
+                                  child: const Text('원래 팀명으로'),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              '이 팀명은 내 화면에만 적용됩니다.',
+                              style: TextStyle(color: Color(0xFF64757B)),
+                            ),
+                          ] else
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: FilledButton.tonal(
+                                onPressed: () {
+                                  aliasController.text = displayTeamName;
+                                  setState(() {
+                                    editingAlias = true;
+                                  });
+                                },
+                                child: const Text('개인 팀명 바꾸기'),
                               ),
                             ),
-                            const SizedBox(width: 12),
-                            DropdownButton<String>(
-                              value: _displayText(task['status']),
-                              items: const [
-                                DropdownMenuItem(
-                                    value: 'TODO', child: Text('TODO')),
-                                DropdownMenuItem(
-                                    value: 'IN_PROGRESS', child: Text('진행 중')),
-                                DropdownMenuItem(
-                                    value: 'DONE', child: Text('완료')),
-                              ],
-                              onChanged: (value) async {
-                                if (value == null) return;
-                                final response = await widget.controller.api
-                                    .updateTeamTaskStatus(
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    SectionPanel(
+                      title: '업무 분담',
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _AuthTextField(
+                            controller: taskTitleController,
+                            label: '업무 제목',
+                            hintText: '예: 발표 자료 초안 만들기',
+                          ),
+                          const SizedBox(height: 12),
+                          _AuthTextField(
+                            controller: taskDescriptionController,
+                            label: '업무 설명',
+                            hintText: '이번 업무에서 할 일을 적어주세요',
+                          ),
+                          const SizedBox(height: 12),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: FilledButton.tonal(
+                              onPressed: () async {
+                                final response =
+                                    await widget.controller.api.createTeamTask(
                                   teamId: teamId,
-                                  taskId: _asInt(task['taskId']),
-                                  status: value,
+                                  title: taskTitleController.text.trim(),
+                                  description:
+                                      taskDescriptionController.text.trim(),
                                 );
                                 if (!context.mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text(response.message)),
-                                );
+                                    SnackBar(content: Text(response.message)));
                                 if (response.success) {
-                                  setState(() => refreshSeed++);
+                                  setState(() {
+                                    refreshSeed++;
+                                    taskTitleController.clear();
+                                    taskDescriptionController.clear();
+                                  });
                                 }
                               },
+                              child: const Text('업무 추가'),
                             ),
-                          ],
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            SectionPanel(
-              title: '회의 메모',
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _AuthTextField(
-                    controller: meetingTitleController,
-                    label: '회의 제목',
-                    hintText: '예: 킥오프 회의',
-                  ),
-                  const SizedBox(height: 12),
-                  _AuthTextField(
-                    controller: meetingNoteController,
-                    label: '회의 메모',
-                    hintText: '결정 내용과 다음 액션을 남겨주세요',
-                  ),
-                  const SizedBox(height: 12),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: FilledButton.tonal(
-                      onPressed: () async {
-                        final response =
-                            await widget.controller.api.createTeamMeetingNote(
-                          teamId: teamId,
-                          title: meetingTitleController.text.trim(),
-                          noteBody: meetingNoteController.text.trim(),
-                        );
-                        if (!context.mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(response.message)),
-                        );
-                        if (response.success) {
-                          setState(() {
-                            refreshSeed++;
-                            meetingTitleController.clear();
-                            meetingNoteController.clear();
-                          });
-                        }
-                      },
-                      child: const Text('회의 메모 저장'),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  if (meetingNotes.isEmpty)
-                    const EmptyStateCard(
-                      title: '회의 메모가 없습니다',
-                      description: '회의 후 결정 내용을 남기면 팀원 모두 같은 맥락을 볼 수 있습니다.',
-                    )
-                  else
-                    ...meetingNotes.map(
-                      (note) => InfoCard(
-                        title: _displayText(note['title']),
-                        content:
-                            '${_displayText(note['noteBody'])}\n작성 ${_displayText(note['createdByName'])} · ${_displayText(note['createdAt'])}',
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            SectionPanel(
-              title: '팀 대화창',
-              child: messages.isEmpty
-                  ? const EmptyStateCard(
-                      title: '팀 대화가 아직 없습니다',
-                      description: '대화가 시작되면 여기에서 바로 이어서 볼 수 있습니다.',
-                    )
-                  : Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF9FCFB),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFDCE8E4)),
-                      ),
-                      child: Column(
-                        children: messages
-                            .map(
-                              (message) => Align(
-                                alignment: Alignment.centerLeft,
-                                child: Container(
-                                  width: double.infinity,
-                                  margin: const EdgeInsets.only(bottom: 10),
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(14),
-                                    border: Border.all(
-                                      color: const Color(0xFFDCE8E4),
-                                    ),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
+                          ),
+                          const SizedBox(height: 16),
+                          if (tasks.isEmpty)
+                            const EmptyStateCard(
+                              title: '배정된 업무가 없습니다',
+                              description:
+                                  '팀이 해야 할 일을 나누면 여기에서 진행 상태를 볼 수 있습니다.',
+                            )
+                          else
+                            ...tasks.map(
+                              (task) => Container(
+                                margin: const EdgeInsets.only(bottom: 10),
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                      color: const Color(0xFFDCE8E4)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            _displayText(
-                                              message['senderName'],
-                                              emptyMessage: '알 수 없음',
-                                            ),
+                                            _displayText(task['title']),
                                             style: const TextStyle(
-                                              fontWeight: FontWeight.w800,
-                                            ),
+                                                fontWeight: FontWeight.w800),
                                           ),
-                                          const Spacer(),
+                                          const SizedBox(height: 6),
                                           Text(
-                                            _timeLabel(message['sentAt']),
+                                            '${_displayText(task['description'], emptyMessage: '설명 없음')}\n담당 ${_displayText(task['assigneeName'], emptyMessage: '미지정')} · 마감 ${_displayText(task['dueAt'], emptyMessage: '미정')}',
                                             style: const TextStyle(
-                                              color: Color(0xFF75848A),
-                                              fontSize: 12,
+                                              color: Color(0xFF64757B),
+                                              height: 1.4,
                                             ),
                                           ),
                                         ],
                                       ),
-                                      const SizedBox(height: 6),
-                                      Text(_displayText(message['message'])),
-                                    ],
-                                  ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    DropdownButton<String>(
+                                      value: _displayText(task['status']),
+                                      items: const [
+                                        DropdownMenuItem(
+                                            value: 'TODO', child: Text('TODO')),
+                                        DropdownMenuItem(
+                                            value: 'IN_PROGRESS',
+                                            child: Text('진행 중')),
+                                        DropdownMenuItem(
+                                            value: 'DONE', child: Text('완료')),
+                                      ],
+                                      onChanged: (value) async {
+                                        if (value == null) return;
+                                        final response = await widget
+                                            .controller.api
+                                            .updateTeamTaskStatus(
+                                          teamId: teamId,
+                                          taskId: _asInt(task['taskId']),
+                                          status: value,
+                                        );
+                                        if (!context.mounted) return;
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(SnackBar(
+                                                content:
+                                                    Text(response.message)));
+                                        if (response.success) {
+                                          setState(() => refreshSeed++);
+                                        }
+                                      },
+                                    ),
+                                  ],
                                 ),
                               ),
-                            )
-                            .toList(),
+                            ),
+                        ],
                       ),
                     ),
-            ),
-            const SizedBox(height: 10),
-            const EndpointChip(label: 'GET ${Endpoints.teamsMe}'),
-            EndpointChip(label: 'GET ${Endpoints.teamDetail(3001)}'),
-            EndpointChip(label: 'GET ${Endpoints.teamTasks(3001)}'),
-            EndpointChip(label: 'GET ${Endpoints.teamMeetingNotes(3001)}'),
-            EndpointChip(label: 'GET ${Endpoints.teamChatRoom(3001)}'),
-            EndpointChip(label: 'GET ${Endpoints.chatMessages(4001)}'),
-          ],
+                    const SizedBox(height: 16),
+                    SectionPanel(
+                      title: '회의 메모',
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _AuthTextField(
+                            controller: meetingTitleController,
+                            label: '회의 제목',
+                            hintText: '예: 킥오프 회의',
+                          ),
+                          const SizedBox(height: 12),
+                          _AuthTextField(
+                            controller: meetingNoteController,
+                            label: '회의 메모',
+                            hintText: '결정 내용과 다음 액션을 남겨주세요',
+                          ),
+                          const SizedBox(height: 12),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: FilledButton.tonal(
+                              onPressed: () async {
+                                final response = await widget.controller.api
+                                    .createTeamMeetingNote(
+                                  teamId: teamId,
+                                  title: meetingTitleController.text.trim(),
+                                  noteBody: meetingNoteController.text.trim(),
+                                );
+                                if (!context.mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text(response.message)));
+                                if (response.success) {
+                                  setState(() {
+                                    refreshSeed++;
+                                    meetingTitleController.clear();
+                                    meetingNoteController.clear();
+                                  });
+                                }
+                              },
+                              child: const Text('회의 메모 저장'),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          if (meetingNotes.isEmpty)
+                            const EmptyStateCard(
+                              title: '회의 메모가 없습니다',
+                              description:
+                                  '회의 후 결정 내용을 남기면 팀원 모두 같은 맥락을 볼 수 있습니다.',
+                            )
+                          else
+                            ...meetingNotes.map(
+                              (note) => InfoCard(
+                                title: _displayText(note['title']),
+                                content:
+                                    '${_displayText(note['noteBody'])}\n작성 ${_displayText(note['createdByName'])} · ${_displayText(note['createdAt'])}',
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    SectionPanel(
+                      title: '팀 대화창',
+                      child: messages.isEmpty
+                          ? const EmptyStateCard(
+                              title: '팀 대화가 아직 없습니다',
+                              description: '대화가 시작되면 여기에서 바로 이어서 볼 수 있습니다.',
+                            )
+                          : Container(
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF9FCFB),
+                                borderRadius: BorderRadius.circular(16),
+                                border:
+                                    Border.all(color: const Color(0xFFDCE8E4)),
+                              ),
+                              child: Column(
+                                children: messages
+                                    .map(
+                                      (message) => Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: Container(
+                                          width: double.infinity,
+                                          margin:
+                                              const EdgeInsets.only(bottom: 10),
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius:
+                                                BorderRadius.circular(14),
+                                            border: Border.all(
+                                              color: const Color(0xFFDCE8E4),
+                                            ),
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                children: [
+                                                  Text(
+                                                    _displayText(
+                                                      message['senderName'],
+                                                      emptyMessage: '알 수 없음',
+                                                    ),
+                                                    style: const TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.w800,
+                                                    ),
+                                                  ),
+                                                  const Spacer(),
+                                                  Text(
+                                                    _timeLabel(
+                                                        message['sentAt']),
+                                                    style: const TextStyle(
+                                                      color: Color(0xFF75848A),
+                                                      fontSize: 12,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 6),
+                                              Text(_displayText(
+                                                  message['message'])),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
+                              ),
+                            ),
+                    ),
+                    const SizedBox(height: 10),
+                    const EndpointChip(label: 'GET ${Endpoints.teamsMe}'),
+                    EndpointChip(label: 'GET ${Endpoints.teamDetail(3001)}'),
+                    EndpointChip(label: 'GET ${Endpoints.teamTasks(3001)}'),
+                    EndpointChip(
+                        label: 'GET ${Endpoints.teamMeetingNotes(3001)}'),
+                    EndpointChip(label: 'GET ${Endpoints.teamChatRoom(3001)}'),
+                    EndpointChip(
+                      label: 'GET ${Endpoints.chatMessages(4001)}',
+                    ),
+                  ],
+                );
+              },
+            );
+          },
         );
       },
     );
