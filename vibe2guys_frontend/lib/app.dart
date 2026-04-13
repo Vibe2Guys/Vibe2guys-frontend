@@ -191,6 +191,17 @@ class AppTheme {
     );
   }
 
+  static BoxDecoration subtlePanelDecoration() {
+    return panelDecoration(background: surfaceAlt, borderColor: border);
+  }
+
+  static BoxDecoration accentPanelDecoration() {
+    return panelDecoration(
+      background: const Color(0xFFF8FAFF),
+      borderColor: const Color(0xFFC7D8FE),
+    );
+  }
+
   static BoxDecoration shellDecoration() {
     return const BoxDecoration(
       gradient: LinearGradient(
@@ -851,11 +862,9 @@ class _AuthHighlight extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             description,
-            style: const TextStyle(
-              color: Color(0xFFD7ECE8),
-              fontSize: 14,
-              height: 1.5,
-            ),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: const Color(0xFFCBD5E1),
+                ),
           ),
         ],
       ),
@@ -1435,12 +1444,7 @@ class _StudentDashboardPageState extends State<StudentDashboardPage> {
                             (notification) => Container(
                               margin: const EdgeInsets.only(bottom: 10),
                               padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFFFBF0),
-                                borderRadius: BorderRadius.circular(16),
-                                border:
-                                    Border.all(color: const Color(0xFFE7D9A6)),
-                              ),
+                              decoration: AppTheme.accentPanelDecoration(),
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -1458,10 +1462,9 @@ class _StudentDashboardPageState extends State<StudentDashboardPage> {
                                         const SizedBox(height: 6),
                                         Text(
                                           _displayText(notification['content']),
-                                          style: const TextStyle(
-                                            color: Color(0xFF5E5A43),
-                                            height: 1.5,
-                                          ),
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium,
                                         ),
                                       ],
                                     ),
@@ -1843,12 +1846,7 @@ class _StudentCourseHomePanelState extends State<_StudentCourseHomePanel> {
                               (todo) => Container(
                                 margin: const EdgeInsets.only(bottom: 10),
                                 padding: const EdgeInsets.all(14),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                      color: const Color(0xFFDCE8E4)),
-                                ),
+                                decoration: AppTheme.panelDecoration(),
                                 child: Row(
                                   children: [
                                     Expanded(
@@ -1865,9 +1863,9 @@ class _StudentCourseHomePanelState extends State<_StudentCourseHomePanel> {
                                           const SizedBox(height: 6),
                                           Text(
                                             '${_displayText(todo['summary'])} · ${_displayText(todo['scheduleAt'])}',
-                                            style: const TextStyle(
-                                              color: Color(0xFF64757B),
-                                            ),
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodyMedium,
                                           ),
                                         ],
                                       ),
@@ -2107,10 +2105,7 @@ class _GradeItemCard extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               '피드백 · ${_displayText(item['feedback'])}',
-              style: const TextStyle(
-                color: Color(0xFF51656B),
-                height: 1.5,
-              ),
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
           ],
         ],
@@ -2366,10 +2361,9 @@ class _StudentCourseOverview extends StatelessWidget {
               ),
               Text(
                 heroSubtitle,
-                style: const TextStyle(
-                  color: Color(0xFF64757B),
-                  fontWeight: FontWeight.w600,
-                ),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
               ),
               if (footer != null) ...[
                 const SizedBox(height: 12),
@@ -2456,11 +2450,7 @@ class _StudentWeekPreview extends StatelessWidget {
                         (content) => Container(
                           margin: const EdgeInsets.only(bottom: 10),
                           padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: const Color(0xFFDCE8E4)),
-                          ),
+                          decoration: AppTheme.panelDecoration(),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -2488,10 +2478,9 @@ class _StudentWeekPreview extends StatelessWidget {
                                         emptyMessage:
                                             '강의 개요 또는 교안 설명이 아직 없습니다.',
                                       ),
-                                      style: const TextStyle(
-                                        color: Color(0xFF64757B),
-                                        height: 1.5,
-                                      ),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium,
                                     ),
                                   ],
                                 ),
@@ -2663,12 +2652,7 @@ class _StudentCourseProgressView extends StatelessWidget {
                           (log) => Container(
                             margin: const EdgeInsets.only(bottom: 10),
                             padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              border:
-                                  Border.all(color: const Color(0xFFDCE8E4)),
-                            ),
+                            decoration: AppTheme.panelDecoration(),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -2677,10 +2661,9 @@ class _StudentCourseProgressView extends StatelessWidget {
                                     Expanded(
                                       child: Text(
                                         _displayText(log['title']),
-                                        style: const TextStyle(
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w800,
-                                        ),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleMedium,
                                       ),
                                     ),
                                     _StatusChip(
@@ -2698,7 +2681,7 @@ class _StudentCourseProgressView extends StatelessWidget {
                                     value: (_asInt(log['progressRate'])
                                             .clamp(0, 100)) /
                                         100,
-                                    backgroundColor: const Color(0xFFE8F0ED),
+                                    backgroundColor: AppTheme.border,
                                     valueColor: AlwaysStoppedAnimation<Color>(
                                       _statusToneFor(
                                         '상태',
@@ -3156,7 +3139,7 @@ class _StudentTeamPageState extends State<StudentTeamPage> {
                             const SizedBox(height: 8),
                             const Text(
                               '이 팀명은 내 화면에만 적용됩니다.',
-                              style: TextStyle(color: Color(0xFF64757B)),
+                              style: TextStyle(color: AppTheme.textMuted),
                             ),
                           ] else
                             Align(
@@ -3229,12 +3212,7 @@ class _StudentTeamPageState extends State<StudentTeamPage> {
                               (task) => Container(
                                 margin: const EdgeInsets.only(bottom: 10),
                                 padding: const EdgeInsets.all(14),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                      color: const Color(0xFFDCE8E4)),
-                                ),
+                                decoration: AppTheme.panelDecoration(),
                                 child: Row(
                                   children: [
                                     Expanded(
@@ -3250,10 +3228,9 @@ class _StudentTeamPageState extends State<StudentTeamPage> {
                                           const SizedBox(height: 6),
                                           Text(
                                             '${_displayText(task['description'], emptyMessage: '설명 없음')}\n담당 ${_displayText(task['assigneeName'], emptyMessage: '미지정')} · 마감 ${_displayText(task['dueAt'], emptyMessage: '미정')}',
-                                            style: const TextStyle(
-                                              color: Color(0xFF64757B),
-                                              height: 1.4,
-                                            ),
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodyMedium,
                                           ),
                                         ],
                                       ),
@@ -3366,12 +3343,7 @@ class _StudentTeamPageState extends State<StudentTeamPage> {
                             )
                           : Container(
                               padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF9FCFB),
-                                borderRadius: BorderRadius.circular(16),
-                                border:
-                                    Border.all(color: const Color(0xFFDCE8E4)),
-                              ),
+                              decoration: AppTheme.subtlePanelDecoration(),
                               child: Column(
                                 children: messages
                                     .map(
@@ -3382,14 +3354,8 @@ class _StudentTeamPageState extends State<StudentTeamPage> {
                                           margin:
                                               const EdgeInsets.only(bottom: 10),
                                           padding: const EdgeInsets.all(12),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            borderRadius:
-                                                BorderRadius.circular(14),
-                                            border: Border.all(
-                                              color: const Color(0xFFDCE8E4),
-                                            ),
-                                          ),
+                                          decoration:
+                                              AppTheme.panelDecoration(),
                                           child: Column(
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,
@@ -3410,10 +3376,9 @@ class _StudentTeamPageState extends State<StudentTeamPage> {
                                                   Text(
                                                     _timeLabel(
                                                         message['sentAt']),
-                                                    style: const TextStyle(
-                                                      color: Color(0xFF75848A),
-                                                      fontSize: 12,
-                                                    ),
+                                                    style: Theme.of(context)
+                                                        .textTheme
+                                                        .bodySmall,
                                                   ),
                                                 ],
                                               ),
@@ -3778,12 +3743,7 @@ class _InstructorStudentsPageState extends State<InstructorStudentsPage> {
                                 (student) => Container(
                                   margin: const EdgeInsets.only(bottom: 10),
                                   padding: const EdgeInsets.all(14),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(
-                                        color: const Color(0xFFDCE8E4)),
-                                  ),
+                                  decoration: AppTheme.panelDecoration(),
                                   child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
@@ -3809,9 +3769,9 @@ class _InstructorStudentsPageState extends State<InstructorStudentsPage> {
                                       const SizedBox(height: 8),
                                       Text(
                                         '종합 ${_asInt(student['overallScore'])}점 · 과제 ${_asInt(student['assignmentAverage'])}% · 퀴즈 ${_asInt(student['quizAverage'])}% · 출석 ${_asInt(student['attendanceRate'])}%',
-                                        style: const TextStyle(
-                                          color: Color(0xFF64757B),
-                                        ),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium,
                                       ),
                                     ],
                                   ),
@@ -3903,11 +3863,7 @@ class _InstructorStudentsPageState extends State<InstructorStudentsPage> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF9FCFB),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFDCE8E4)),
-      ),
+      decoration: AppTheme.subtlePanelDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -3919,13 +3875,12 @@ class _InstructorStudentsPageState extends State<InstructorStudentsPage> {
                   children: [
                     Text(
                       _displayText(student['name'], emptyMessage: '이름 없음'),
-                      style: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.w800),
+                      style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 4),
                     Text(
                       _displayText(student['email'], emptyMessage: '이메일 정보 없음'),
-                      style: const TextStyle(color: Color(0xFF66777D)),
+                      style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],
                 ),
@@ -4162,7 +4117,7 @@ class _InstructorCourseManagementPageState
                           courseThumbnailController.text.trim().isEmpty
                               ? '이미지 파일을 올리면 썸네일이 자동으로 연결됩니다.'
                               : '썸네일 파일 업로드 완료',
-                          style: const TextStyle(color: Color(0xFF66777D)),
+                          style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ),
                     ],
@@ -4432,7 +4387,7 @@ class _InstructorCourseManagementPageState
                         contentVideoUrlController.text.trim().isEmpty
                             ? '업로드 후 영상 URL이 자동으로 채워집니다.'
                             : '업로드 완료: 영상 URL이 연결되었습니다.',
-                        style: const TextStyle(color: Color(0xFF66777D)),
+                        style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ),
                   ],
@@ -4464,7 +4419,7 @@ class _InstructorCourseManagementPageState
                         contentDocumentUrlController.text.trim().isEmpty
                             ? 'PDF, DOCX 등 문서를 올리면 자동으로 연결됩니다.'
                             : '문서 파일 업로드 완료',
-                        style: const TextStyle(color: Color(0xFF66777D)),
+                        style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ),
                   ],
@@ -5134,7 +5089,7 @@ class _MyPageState extends State<MyPage> {
                     children: [
                       CircleAvatar(
                         radius: 40,
-                        backgroundColor: const Color(0xFF0E7A66),
+                        backgroundColor: Theme.of(context).colorScheme.primary,
                         backgroundImage: imageProvider,
                         child: imageProvider == null
                             ? Text(
@@ -6070,9 +6025,9 @@ class _StatusTone {
 
   factory _StatusTone.neutral() {
     return const _StatusTone(
-      background: Color(0xFFF4FAF8),
-      border: Color(0xFFD7E7E2),
-      foreground: Color(0xFF31505A),
+      background: AppTheme.surfaceAlt,
+      border: AppTheme.borderStrong,
+      foreground: AppTheme.textSecondary,
     );
   }
 }
@@ -6088,16 +6043,16 @@ _StatusTone _statusToneFor(String label, String value) {
   }
   if (normalized == 'MEDIUM' || value.contains('관찰') || value.contains('비공개')) {
     return const _StatusTone(
-      background: Color(0xFFFFF6E6),
-      border: Color(0xFFF0CF88),
-      foreground: Color(0xFF9A6A00),
+      background: Color(0xFFFFF7ED),
+      border: Color(0xFFFAC58C),
+      foreground: Color(0xFFB45309),
     );
   }
   if (normalized == 'LOW' || value.contains('안정') || value.contains('공개')) {
     return const _StatusTone(
-      background: Color(0xFFEAF7F0),
-      border: Color(0xFFA8D8BC),
-      foreground: Color(0xFF1F7A46),
+      background: Color(0xFFEFFBF3),
+      border: Color(0xFFBBE7C9),
+      foreground: Color(0xFF15803D),
     );
   }
   return _StatusTone.neutral();
