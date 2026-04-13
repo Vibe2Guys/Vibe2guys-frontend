@@ -719,6 +719,53 @@ class MockApiClient implements ApiClient {
   }
 
   @override
+  Future<ApiResponse<List<Map<String, dynamic>>>> getMyNotifications() async {
+    final unauthorized = _unauthorized<List<Map<String, dynamic>>>();
+    if (unauthorized != null) return unauthorized;
+    await Future<void>.delayed(const Duration(milliseconds: 140));
+    return const ApiResponse(
+      success: true,
+      message: '알림 조회 성공',
+      data: [
+        {
+          'notificationId': 1,
+          'type': 'ASSIGNMENT_CREATED',
+          'title': '새 과제가 등록되었습니다.',
+          'content': '1주차 요약 과제를 확인하고 마감 일정을 체크하세요.',
+          'isRead': false,
+          'createdAt': '2026-04-13T09:00:00+09:00',
+          'readAt': null,
+        },
+        {
+          'notificationId': 2,
+          'type': 'NEW_CONTENT',
+          'title': '새 학습 콘텐츠가 등록되었습니다.',
+          'content': '3주차 강의 영상을 확인해보세요.',
+          'isRead': true,
+          'createdAt': '2026-04-12T18:00:00+09:00',
+          'readAt': '2026-04-12T18:30:00+09:00',
+        },
+      ],
+    );
+  }
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> readNotification(
+      int notificationId) async {
+    final unauthorized = _unauthorized<Map<String, dynamic>>();
+    if (unauthorized != null) return unauthorized;
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    return ApiResponse(
+      success: true,
+      message: '알림 읽음 처리 완료',
+      data: {
+        'notificationId': notificationId,
+        'readAt': DateTime.now().toIso8601String(),
+      },
+    );
+  }
+
+  @override
   Future<ApiResponse<Map<String, dynamic>>> updateMyProfile({
     required String name,
     required String profileImageUrl,
@@ -1067,6 +1114,135 @@ class MockApiClient implements ApiClient {
   }
 
   @override
+  Future<ApiResponse<List<Map<String, dynamic>>>> getTeamTasks(
+      int teamId) async {
+    final unauthorized = _unauthorized<List<Map<String, dynamic>>>();
+    if (unauthorized != null) return unauthorized;
+    await Future<void>.delayed(const Duration(milliseconds: 140));
+    return const ApiResponse(
+      success: true,
+      message: '팀 업무 목록 조회 성공',
+      data: [
+        {
+          'taskId': 1,
+          'title': '발표 자료 초안 만들기',
+          'description': '문제 정의와 사례 조사 슬라이드 작성',
+          'status': 'IN_PROGRESS',
+          'assigneeUserId': 1,
+          'assigneeName': '홍길동',
+          'dueAt': '2026-04-16T21:00:00+09:00',
+          'createdByName': '홍길동',
+        },
+        {
+          'taskId': 2,
+          'title': '데이터셋 후보 정리',
+          'description': '사용 가능 데이터셋 3개 비교',
+          'status': 'TODO',
+          'assigneeUserId': 2,
+          'assigneeName': '김학생',
+          'dueAt': '2026-04-15T18:00:00+09:00',
+          'createdByName': '홍길동',
+        },
+      ],
+    );
+  }
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> createTeamTask({
+    required int teamId,
+    required String title,
+    required String description,
+    int? assigneeUserId,
+    String? dueAt,
+  }) async {
+    final unauthorized = _unauthorized<Map<String, dynamic>>();
+    if (unauthorized != null) return unauthorized;
+    await Future<void>.delayed(const Duration(milliseconds: 140));
+    return ApiResponse(
+      success: true,
+      message: '팀 업무 생성 완료',
+      data: {
+        'taskId': 99,
+        'title': title,
+        'description': description,
+        'status': 'TODO',
+        'assigneeUserId': assigneeUserId,
+        'assigneeName': assigneeUserId == null ? null : '팀원',
+        'dueAt': dueAt,
+        'createdByName': _currentUser?.name ?? '홍길동',
+      },
+    );
+  }
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> updateTeamTaskStatus({
+    required int teamId,
+    required int taskId,
+    required String status,
+  }) async {
+    final unauthorized = _unauthorized<Map<String, dynamic>>();
+    if (unauthorized != null) return unauthorized;
+    await Future<void>.delayed(const Duration(milliseconds: 120));
+    return ApiResponse(
+      success: true,
+      message: '팀 업무 상태 변경 완료',
+      data: {
+        'taskId': taskId,
+        'title': '팀 업무',
+        'description': '상태만 변경된 업무',
+        'status': status,
+        'assigneeUserId': _currentUser?.userId,
+        'assigneeName': _currentUser?.name,
+        'dueAt': '2026-04-16T21:00:00+09:00',
+        'createdByName': _currentUser?.name ?? '홍길동',
+      },
+    );
+  }
+
+  @override
+  Future<ApiResponse<List<Map<String, dynamic>>>> getTeamMeetingNotes(
+      int teamId) async {
+    final unauthorized = _unauthorized<List<Map<String, dynamic>>>();
+    if (unauthorized != null) return unauthorized;
+    await Future<void>.delayed(const Duration(milliseconds: 140));
+    return const ApiResponse(
+      success: true,
+      message: '회의 메모 조회 성공',
+      data: [
+        {
+          'noteId': 1,
+          'title': '1차 킥오프 회의',
+          'noteBody': '주제는 학습 중도 이탈 예측으로 정하고 역할을 나눴습니다.',
+          'createdByName': '홍길동',
+          'createdAt': '2026-04-13T20:00:00+09:00',
+        },
+      ],
+    );
+  }
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> createTeamMeetingNote({
+    required int teamId,
+    required String title,
+    required String noteBody,
+  }) async {
+    final unauthorized = _unauthorized<Map<String, dynamic>>();
+    if (unauthorized != null) return unauthorized;
+    await Future<void>.delayed(const Duration(milliseconds: 120));
+    return ApiResponse(
+      success: true,
+      message: '회의 메모 저장 완료',
+      data: {
+        'noteId': 99,
+        'title': title,
+        'noteBody': noteBody,
+        'createdByName': _currentUser?.name ?? '홍길동',
+        'createdAt': DateTime.now().toIso8601String(),
+      },
+    );
+  }
+
+  @override
   Future<ApiResponse<List<Map<String, dynamic>>>> getCourseTeams(
       int courseId) async {
     final unauthorized = _unauthorized<List<Map<String, dynamic>>>();
@@ -1306,6 +1482,50 @@ class MockApiClient implements ApiClient {
         'averageProgressRate': 70,
         'highRiskStudentCount': 5,
         'lowUnderstandingStudentCount': 7,
+      },
+    );
+  }
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> getInstructorGradebook(
+      int courseId) async {
+    final unauthorized = _unauthorized<Map<String, dynamic>>();
+    if (unauthorized != null) return unauthorized;
+    await Future<void>.delayed(const Duration(milliseconds: 180));
+    return const ApiResponse(
+      success: true,
+      message: '강의 성적부 조회 성공',
+      data: {
+        'courseId': 101,
+        'courseTitle': 'AI 기초',
+        'studentCount': 3,
+        'averageOverallScore': 79,
+        'students': [
+          {
+            'studentId': 1,
+            'studentName': '홍길동',
+            'email': 'hong@student.com',
+            'progressRate': 88,
+            'attendanceRate': 92,
+            'assignmentAverage': 90,
+            'quizAverage': 82,
+            'overallScore': 88,
+            'riskLevel': 'LOW',
+            'statusSummary': '안정',
+          },
+          {
+            'studentId': 2,
+            'studentName': '김학생',
+            'email': 'kim@student.com',
+            'progressRate': 61,
+            'attendanceRate': 70,
+            'assignmentAverage': 72,
+            'quizAverage': 64,
+            'overallScore': 68,
+            'riskLevel': 'MEDIUM',
+            'statusSummary': '관찰 필요',
+          },
+        ],
       },
     );
   }

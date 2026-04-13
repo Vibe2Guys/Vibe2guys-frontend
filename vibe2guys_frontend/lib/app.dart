@@ -996,29 +996,44 @@ class AppShell extends StatelessWidget {
   }
 }
 
-class StudentDashboardPage extends StatelessWidget {
+class StudentDashboardPage extends StatefulWidget {
   const StudentDashboardPage({super.key, required this.controller});
   final AppController controller;
 
   @override
+  State<StudentDashboardPage> createState() => _StudentDashboardPageState();
+}
+
+class _StudentDashboardPageState extends State<StudentDashboardPage> {
+  int refreshSeed = 0;
+
+  @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<ApiResponse<dynamic>>>(
+      key: ValueKey(refreshSeed),
       future: Future.wait<ApiResponse<dynamic>>([
-        controller.api.getStudentDashboard(),
-        controller.api.getMyReport(),
-        controller.api.getRecommendations(controller.user!.userId),
-        controller.api.getMyCourses(),
+        widget.controller.api.getStudentDashboard(),
+        widget.controller.api.getMyReport(),
+        widget.controller.api
+            .getRecommendations(widget.controller.user!.userId),
+        widget.controller.api.getMyCourses(),
+        widget.controller.api.getMyNotifications(),
       ]),
       builder: (context, snapshot) {
-        if (!snapshot.hasData)
+        if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
+        }
         final responses = snapshot.data!;
         final dashboard = responses[0].data as Map<String, dynamic>;
         final report = responses[1].data as Map<String, dynamic>;
         final recommendations = responses[2].data as Map<String, dynamic>;
         final courses = responses[3].data as List<Map<String, dynamic>>? ?? [];
+        final notifications =
+            responses[4].data as List<Map<String, dynamic>>? ?? [];
         final recommendedActions =
             _asStringList(recommendations['recommendedActions']);
+        final unreadNotifications =
+            notifications.where((item) => item['isRead'] != true).toList();
 
         return ListView(
           children: [
@@ -1035,14 +1050,17 @@ class StudentDashboardPage extends StatelessWidget {
               runSpacing: 12,
               children: [
                 MetricCard(
-                    label: '출석률',
-                    value: '${_asInt(dashboard['attendanceRate'])}%'),
+                  label: '출석률',
+                  value: '${_asInt(dashboard['attendanceRate'])}%',
+                ),
                 MetricCard(
-                    label: '진도율',
-                    value: '${_asInt(dashboard['progressRate'])}%'),
+                  label: '진도율',
+                  value: '${_asInt(dashboard['progressRate'])}%',
+                ),
                 MetricCard(
-                    label: '이해도',
-                    value: '${_asInt(dashboard['understandingScore'])}'),
+                  label: '이해도',
+                  value: '${_asInt(dashboard['understandingScore'])}',
+                ),
                 MetricCard(
                   label: '위험도',
                   value: _displayText(
@@ -1073,6 +1091,78 @@ class StudentDashboardPage extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             SectionPanel(
+              title: '읽지 않은 알림',
+              child: unreadNotifications.isEmpty
+                  ? const EmptyStateCard(
+                      title: '읽지 않은 알림이 없습니다',
+                      description: '새 공지나 과제 알림이 오면 이곳에서 바로 확인할 수 있습니다.',
+                    )
+                  : Column(
+                      children: unreadNotifications
+                          .take(4)
+                          .map(
+                            (notification) => Container(
+                              margin: const EdgeInsets.only(bottom: 10),
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFFBF0),
+                                borderRadius: BorderRadius.circular(16),
+                                border:
+                                    Border.all(color: const Color(0xFFE7D9A6)),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          _displayText(notification['title']),
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          _displayText(notification['content']),
+                                          style: const TextStyle(
+                                            color: Color(0xFF5E5A43),
+                                            height: 1.5,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  FilledButton.tonal(
+                                    onPressed: () async {
+                                      final response = await widget
+                                          .controller.api
+                                          .readNotification(_asInt(
+                                              notification['notificationId']));
+                                      if (!context.mounted) {
+                                        return;
+                                      }
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(SnackBar(
+                                              content: Text(response.message)));
+                                      if (response.success) {
+                                        setState(() => refreshSeed++);
+                                      }
+                                    },
+                                    child: const Text('읽음'),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                          .toList(),
+                    ),
+            ),
+            const SizedBox(height: 16),
+            SectionPanel(
               title: '내 강의 빠른 보기',
               child: courses.isEmpty
                   ? const EmptyStateCard(
@@ -1092,9 +1182,8 @@ class StudentDashboardPage extends StatelessWidget {
                                 description:
                                     '진도 ${_asInt(course['progressRate'])}% · 출석 ${_asInt(course['attendanceRate'])}%\n미제출 ${_asInt(course['assignmentPendingCount'])}개',
                                 selected: false,
-                                onTap: () {
-                                  controller.setSelectedIndex(1);
-                                },
+                                onTap: () =>
+                                    widget.controller.setSelectedIndex(1),
                               ),
                             ),
                           )
@@ -1106,7 +1195,7 @@ class StudentDashboardPage extends StatelessWidget {
               FutureBuilder<List<ApiResponse<dynamic>>>(
                 future: Future.wait<ApiResponse<dynamic>>(
                   courses.take(2).map(
-                        (course) => controller.api
+                        (course) => widget.controller.api
                             .getCourseHome(_asInt(course['courseId'])),
                       ),
                 ),
@@ -1187,9 +1276,8 @@ class StudentDashboardPage extends StatelessWidget {
                                       (announcement) => InfoCard(
                                         title:
                                             '${_displayText(announcement['courseTitle'])} · ${_displayText(announcement['title'])}',
-                                        content: _displayText(
-                                          announcement['body'],
-                                        ),
+                                        content:
+                                            _displayText(announcement['body']),
                                       ),
                                     )
                                     .toList(),
@@ -2574,20 +2662,33 @@ class StudentTeamPage extends StatefulWidget {
 
 class _StudentTeamPageState extends State<StudentTeamPage> {
   final TextEditingController aliasController = TextEditingController();
+  final TextEditingController taskTitleController = TextEditingController();
+  final TextEditingController taskDescriptionController =
+      TextEditingController();
+  final TextEditingController meetingTitleController = TextEditingController();
+  final TextEditingController meetingNoteController = TextEditingController();
   bool editingAlias = false;
+  int refreshSeed = 0;
 
   @override
   void dispose() {
     aliasController.dispose();
+    taskTitleController.dispose();
+    taskDescriptionController.dispose();
+    meetingTitleController.dispose();
+    meetingNoteController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<ApiResponse<dynamic>>>(
+      key: ValueKey(refreshSeed),
       future: Future.wait<ApiResponse<dynamic>>([
         widget.controller.api.getMyTeam(),
         widget.controller.api.getTeamDetail(3001),
+        widget.controller.api.getTeamTasks(3001),
+        widget.controller.api.getTeamMeetingNotes(3001),
         widget.controller.api.getTeamChatRoom(3001),
         widget.controller.api.getChatMessages(4001),
       ]),
@@ -2598,7 +2699,10 @@ class _StudentTeamPageState extends State<StudentTeamPage> {
         final responses = snapshot.data!;
         final team = responses[0].data as Map<String, dynamic>? ?? {};
         final detail = responses[1].data as Map<String, dynamic>? ?? {};
-        final messages = responses[3].data as List<Map<String, dynamic>>? ?? [];
+        final tasks = responses[2].data as List<Map<String, dynamic>>? ?? [];
+        final meetingNotes =
+            responses[3].data as List<Map<String, dynamic>>? ?? [];
+        final messages = responses[5].data as List<Map<String, dynamic>>? ?? [];
         final teamId = _asInt(detail['teamId'] ?? team['teamId']);
         final defaultTeamName = _displayText(
           detail['teamName'] ?? detail['name'] ?? team['teamName'],
@@ -2706,6 +2810,183 @@ class _StudentTeamPageState extends State<StudentTeamPage> {
             ),
             const SizedBox(height: 16),
             SectionPanel(
+              title: '업무 분담',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _AuthTextField(
+                    controller: taskTitleController,
+                    label: '업무 제목',
+                    hintText: '예: 발표 자료 초안 만들기',
+                  ),
+                  const SizedBox(height: 12),
+                  _AuthTextField(
+                    controller: taskDescriptionController,
+                    label: '업무 설명',
+                    hintText: '이번 업무에서 할 일을 적어주세요',
+                  ),
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: FilledButton.tonal(
+                      onPressed: () async {
+                        final response =
+                            await widget.controller.api.createTeamTask(
+                          teamId: teamId,
+                          title: taskTitleController.text.trim(),
+                          description: taskDescriptionController.text.trim(),
+                        );
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(response.message)),
+                        );
+                        if (response.success) {
+                          setState(() {
+                            refreshSeed++;
+                            taskTitleController.clear();
+                            taskDescriptionController.clear();
+                          });
+                        }
+                      },
+                      child: const Text('업무 추가'),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (tasks.isEmpty)
+                    const EmptyStateCard(
+                      title: '배정된 업무가 없습니다',
+                      description: '팀이 해야 할 일을 나누면 여기에서 진행 상태를 볼 수 있습니다.',
+                    )
+                  else
+                    ...tasks.map(
+                      (task) => Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0xFFDCE8E4)),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _displayText(task['title']),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    '${_displayText(task['description'], emptyMessage: '설명 없음')}\n담당 ${_displayText(task['assigneeName'], emptyMessage: '미지정')} · 마감 ${_displayText(task['dueAt'], emptyMessage: '미정')}',
+                                    style: const TextStyle(
+                                      color: Color(0xFF64757B),
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            DropdownButton<String>(
+                              value: _displayText(task['status']),
+                              items: const [
+                                DropdownMenuItem(
+                                    value: 'TODO', child: Text('TODO')),
+                                DropdownMenuItem(
+                                    value: 'IN_PROGRESS', child: Text('진행 중')),
+                                DropdownMenuItem(
+                                    value: 'DONE', child: Text('완료')),
+                              ],
+                              onChanged: (value) async {
+                                if (value == null) return;
+                                final response = await widget.controller.api
+                                    .updateTeamTaskStatus(
+                                  teamId: teamId,
+                                  taskId: _asInt(task['taskId']),
+                                  status: value,
+                                );
+                                if (!context.mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text(response.message)),
+                                );
+                                if (response.success) {
+                                  setState(() => refreshSeed++);
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            SectionPanel(
+              title: '회의 메모',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _AuthTextField(
+                    controller: meetingTitleController,
+                    label: '회의 제목',
+                    hintText: '예: 킥오프 회의',
+                  ),
+                  const SizedBox(height: 12),
+                  _AuthTextField(
+                    controller: meetingNoteController,
+                    label: '회의 메모',
+                    hintText: '결정 내용과 다음 액션을 남겨주세요',
+                  ),
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: FilledButton.tonal(
+                      onPressed: () async {
+                        final response =
+                            await widget.controller.api.createTeamMeetingNote(
+                          teamId: teamId,
+                          title: meetingTitleController.text.trim(),
+                          noteBody: meetingNoteController.text.trim(),
+                        );
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(response.message)),
+                        );
+                        if (response.success) {
+                          setState(() {
+                            refreshSeed++;
+                            meetingTitleController.clear();
+                            meetingNoteController.clear();
+                          });
+                        }
+                      },
+                      child: const Text('회의 메모 저장'),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (meetingNotes.isEmpty)
+                    const EmptyStateCard(
+                      title: '회의 메모가 없습니다',
+                      description: '회의 후 결정 내용을 남기면 팀원 모두 같은 맥락을 볼 수 있습니다.',
+                    )
+                  else
+                    ...meetingNotes.map(
+                      (note) => InfoCard(
+                        title: _displayText(note['title']),
+                        content:
+                            '${_displayText(note['noteBody'])}\n작성 ${_displayText(note['createdByName'])} · ${_displayText(note['createdAt'])}',
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            SectionPanel(
               title: '팀 대화창',
               child: messages.isEmpty
                   ? const EmptyStateCard(
@@ -2774,6 +3055,8 @@ class _StudentTeamPageState extends State<StudentTeamPage> {
             const SizedBox(height: 10),
             const EndpointChip(label: 'GET ${Endpoints.teamsMe}'),
             EndpointChip(label: 'GET ${Endpoints.teamDetail(3001)}'),
+            EndpointChip(label: 'GET ${Endpoints.teamTasks(3001)}'),
+            EndpointChip(label: 'GET ${Endpoints.teamMeetingNotes(3001)}'),
             EndpointChip(label: 'GET ${Endpoints.teamChatRoom(3001)}'),
             EndpointChip(label: 'GET ${Endpoints.chatMessages(4001)}'),
           ],
@@ -3003,6 +3286,8 @@ class _InstructorStudentsPageState extends State<InstructorStudentsPage> {
           widget.controller.api.getInstructorDashboard(selectedCourseId!),
         if (selectedCourseId != null)
           widget.controller.api.getInterventions(selectedCourseId!),
+        if (selectedCourseId != null)
+          widget.controller.api.getInstructorGradebook(selectedCourseId!),
       ]),
       builder: (context, snapshot) {
         if (!snapshot.hasData)
@@ -3018,6 +3303,9 @@ class _InstructorStudentsPageState extends State<InstructorStudentsPage> {
         final interventions = snapshot.data!.length > 2
             ? snapshot.data![2].data as List<Map<String, dynamic>>? ?? []
             : const <Map<String, dynamic>>[];
+        final gradebook = snapshot.data!.length > 3
+            ? snapshot.data![3].data as Map<String, dynamic>? ?? {}
+            : const <String, dynamic>{};
 
         return ListView(
           children: [
@@ -3082,6 +3370,73 @@ class _InstructorStudentsPageState extends State<InstructorStudentsPage> {
                 ],
               ),
               const SizedBox(height: 16),
+              SectionPanel(
+                title: '성적부 요약',
+                child: ((gradebook['students'] as List<dynamic>?) ?? const [])
+                        .isEmpty
+                    ? const EmptyStateCard(
+                        title: '성적 데이터가 없습니다',
+                        description: '과제와 퀴즈가 쌓이면 강의별 성적 요약이 표시됩니다.',
+                      )
+                    : Column(
+                        children: [
+                          InfoCard(
+                            title: '강의 평균 점수',
+                            content:
+                                '전체 ${_asInt(gradebook['averageOverallScore'])}점 · 수강생 ${_asInt(gradebook['studentCount'])}명',
+                          ),
+                          const SizedBox(height: 12),
+                          ...(((gradebook['students'] as List<dynamic>?) ??
+                                  const [])
+                              .whereType<Map<String, dynamic>>()
+                              .take(5)
+                              .map(
+                                (student) => Container(
+                                  margin: const EdgeInsets.only(bottom: 10),
+                                  padding: const EdgeInsets.all(14),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                        color: const Color(0xFFDCE8E4)),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              _displayText(
+                                                  student['studentName']),
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w800,
+                                              ),
+                                            ),
+                                          ),
+                                          _StatusChip(
+                                            label: '위험도',
+                                            value: _displayText(
+                                                student['riskLevel']),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        '종합 ${_asInt(student['overallScore'])}점 · 과제 ${_asInt(student['assignmentAverage'])}% · 퀴즈 ${_asInt(student['quizAverage'])}% · 출석 ${_asInt(student['attendanceRate'])}%',
+                                        style: const TextStyle(
+                                          color: Color(0xFF64757B),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )),
+                        ],
+                      ),
+              ),
+              const SizedBox(height: 16),
               _buildStudentList(selectedCourseId!),
               const SizedBox(height: 12),
               SectionPanel(
@@ -3110,6 +3465,9 @@ class _InstructorStudentsPageState extends State<InstructorStudentsPage> {
               EndpointChip(
                   label:
                       'PATCH ${Endpoints.courseStudentMemo(selectedCourseId!, 1)}'),
+              EndpointChip(
+                  label:
+                      'GET ${Endpoints.courseInstructorGradebook(selectedCourseId!)}'),
             ],
           ],
         );

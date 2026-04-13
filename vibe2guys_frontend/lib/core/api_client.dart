@@ -84,6 +84,9 @@ abstract class ApiClient {
     required String category,
   });
   Future<ApiResponse<Map<String, dynamic>>> getMyProfile();
+  Future<ApiResponse<List<Map<String, dynamic>>>> getMyNotifications();
+  Future<ApiResponse<Map<String, dynamic>>> readNotification(
+      int notificationId);
   Future<ApiResponse<Map<String, dynamic>>> updateMyProfile({
     required String name,
     required String profileImageUrl,
@@ -126,6 +129,26 @@ abstract class ApiClient {
   Future<ApiResponse<Map<String, dynamic>>> getMyReport();
   Future<ApiResponse<Map<String, dynamic>>> getRecommendations(int studentId);
   Future<ApiResponse<Map<String, dynamic>>> getMyTeam();
+  Future<ApiResponse<List<Map<String, dynamic>>>> getTeamTasks(int teamId);
+  Future<ApiResponse<Map<String, dynamic>>> createTeamTask({
+    required int teamId,
+    required String title,
+    required String description,
+    int? assigneeUserId,
+    String? dueAt,
+  });
+  Future<ApiResponse<Map<String, dynamic>>> updateTeamTaskStatus({
+    required int teamId,
+    required int taskId,
+    required String status,
+  });
+  Future<ApiResponse<List<Map<String, dynamic>>>> getTeamMeetingNotes(
+      int teamId);
+  Future<ApiResponse<Map<String, dynamic>>> createTeamMeetingNote({
+    required int teamId,
+    required String title,
+    required String noteBody,
+  });
   Future<ApiResponse<List<Map<String, dynamic>>>> getCourseTeams(int courseId);
   Future<ApiResponse<Map<String, dynamic>>> autoGroupTeams({
     required int courseId,
@@ -139,6 +162,8 @@ abstract class ApiClient {
   Future<ApiResponse<List<Map<String, dynamic>>>> getChatMessages(
       int chatRoomId);
   Future<ApiResponse<Map<String, dynamic>>> getInstructorDashboard(
+      int courseId);
+  Future<ApiResponse<Map<String, dynamic>>> getInstructorGradebook(
       int courseId);
   Future<ApiResponse<List<Map<String, dynamic>>>> getRiskStudents(int courseId);
   Future<ApiResponse<List<Map<String, dynamic>>>> getLowUnderstandingStudents(

@@ -312,6 +312,15 @@ class HttpApiClient implements ApiClient {
       _getMap('/users/me');
 
   @override
+  Future<ApiResponse<List<Map<String, dynamic>>>> getMyNotifications() =>
+      _getList('/notifications/me');
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> readNotification(
+          int notificationId) =>
+      _patchMap('/notifications/$notificationId/read', body: const {});
+
+  @override
   Future<ApiResponse<Map<String, dynamic>>> updateMyProfile({
     required String name,
     required String profileImageUrl,
@@ -469,6 +478,58 @@ class HttpApiClient implements ApiClient {
   }
 
   @override
+  Future<ApiResponse<List<Map<String, dynamic>>>> getTeamTasks(int teamId) =>
+      _getList('/teams/$teamId/tasks');
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> createTeamTask({
+    required int teamId,
+    required String title,
+    required String description,
+    int? assigneeUserId,
+    String? dueAt,
+  }) {
+    return _postMap(
+      '/teams/$teamId/tasks',
+      body: {
+        'title': title,
+        'description': description,
+        'assigneeUserId': assigneeUserId,
+        'dueAt': dueAt,
+      },
+    );
+  }
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> updateTeamTaskStatus({
+    required int teamId,
+    required int taskId,
+    required String status,
+  }) {
+    return _patchMap(
+      '/teams/$teamId/tasks/$taskId/status',
+      body: {'status': status},
+    );
+  }
+
+  @override
+  Future<ApiResponse<List<Map<String, dynamic>>>> getTeamMeetingNotes(
+          int teamId) =>
+      _getList('/teams/$teamId/meeting-notes');
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> createTeamMeetingNote({
+    required int teamId,
+    required String title,
+    required String noteBody,
+  }) {
+    return _postMap(
+      '/teams/$teamId/meeting-notes',
+      body: {'title': title, 'noteBody': noteBody},
+    );
+  }
+
+  @override
   Future<ApiResponse<List<Map<String, dynamic>>>> getCourseTeams(
           int courseId) =>
       _getList('/courses/$courseId/teams');
@@ -536,6 +597,11 @@ class HttpApiClient implements ApiClient {
   Future<ApiResponse<Map<String, dynamic>>> getInstructorDashboard(
           int courseId) =>
       _getMap('/dashboard/instructor/courses/$courseId');
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> getInstructorGradebook(
+          int courseId) =>
+      _getMap('/courses/$courseId/gradebook/instructor');
 
   @override
   Future<ApiResponse<List<Map<String, dynamic>>>> getRiskStudents(

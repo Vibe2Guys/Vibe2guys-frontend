@@ -77,6 +77,7 @@ class Endpoints {
   static const String createVideoUploadUrl =
       '$baseUrl/uploads/videos/presigned-url';
   static const String usersMe = '$baseUrl/users/me';
+  static const String notificationsMe = '$baseUrl/notifications/me';
   static String courseAssignments(int courseId) =>
       '$baseUrl/courses/$courseId/assignments';
   static String courseQuizzes(int courseId) =>
@@ -98,12 +99,21 @@ class Endpoints {
   static String courseTeams(int courseId) => '$baseUrl/courses/$courseId/teams';
   static String courseTeamAutoGrouping(int courseId) =>
       '$baseUrl/courses/$courseId/teams/auto-grouping';
+  static String courseInstructorGradebook(int courseId) =>
+      '$baseUrl/courses/$courseId/gradebook/instructor';
   static String teamAnalytics(int teamId) => '$baseUrl/teams/$teamId/analytics';
   static String teamMemberContributions(int teamId) =>
       '$baseUrl/teams/$teamId/members/contributions';
+  static String teamTasks(int teamId) => '$baseUrl/teams/$teamId/tasks';
+  static String teamTaskStatus(int teamId, int taskId) =>
+      '$baseUrl/teams/$teamId/tasks/$taskId/status';
+  static String teamMeetingNotes(int teamId) =>
+      '$baseUrl/teams/$teamId/meeting-notes';
   static String teamChatRoom(int teamId) => '$baseUrl/teams/$teamId/chat-room';
   static String chatMessages(int roomId) =>
       '$baseUrl/chat-rooms/$roomId/messages';
+  static String notificationRead(int notificationId) =>
+      '$baseUrl/notifications/$notificationId/read';
 
   static String instructorDashboard(int courseId) =>
       '$baseUrl/dashboard/instructor/courses/$courseId';
