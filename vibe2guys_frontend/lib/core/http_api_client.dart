@@ -909,8 +909,9 @@ class HttpApiClient implements ApiClient {
         memo: (body?['memo'] as String?) ?? '',
       );
     }
-    if (path.startsWith('/courses/'))
+    if (path.startsWith('/courses/')) {
       return _fallback.getCourseDetail(_extractId(path));
+    }
     if (path.startsWith('/contents/') && path.endsWith('/progress')) {
       final watchedSeconds =
           (body?['lastPositionSeconds'] as num?)?.toInt() ?? 0;
@@ -923,8 +924,9 @@ class HttpApiClient implements ApiClient {
         totalSeconds: totalSeconds,
       );
     }
-    if (path.startsWith('/contents/'))
+    if (path.startsWith('/contents/')) {
       return _fallback.getContentDetail(_extractId(path));
+    }
     if (RegExp(r'^/assignments/\d+/submissions/\d+/grade$').hasMatch(path)) {
       final ids = RegExp(r'(\d+)')
           .allMatches(path)
@@ -943,11 +945,12 @@ class HttpApiClient implements ApiClient {
       }
       return _fallback.submitAssignment(
         assignmentId: _extractId(path),
-        answerText: (body?['answerText'] as String?) ?? '',
+        answerText: (body['answerText'] as String?) ?? '',
       );
     }
-    if (path.startsWith('/assignments/'))
+    if (path.startsWith('/assignments/')) {
       return _fallback.getAssignmentDetail(_extractId(path));
+    }
     if (path == '/dashboard/student') return _fallback.getStudentDashboard();
     if (path == '/reports/me') return _fallback.getMyReport();
     if (path == '/notifications/me') return _fallback.getMyNotifications();
@@ -1001,8 +1004,9 @@ class HttpApiClient implements ApiClient {
     if (path.startsWith('/teams/') && path.endsWith('/chat-room')) {
       return _fallback.getTeamChatRoom(_extractId(path));
     }
-    if (path.startsWith('/teams/'))
+    if (path.startsWith('/teams/')) {
       return _fallback.getTeamDetail(_extractId(path));
+    }
     if (path.startsWith('/dashboard/instructor/courses/')) {
       return _fallback.getInstructorDashboard(_extractId(path));
     }

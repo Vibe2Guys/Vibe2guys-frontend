@@ -261,7 +261,9 @@ class AppController extends ChangeNotifier {
   bool _loading = false;
   int selectedIndex = 0;
   bool showingMyPage = false;
+  int notificationRefreshSeed = 0;
   final Map<int, String> _teamAliases = {};
+  AppNavigationRequest? _pendingNavigation;
 
   bool get loading => _loading;
   bool get isAuthenticated =>
@@ -305,22 +307,58 @@ class AppController extends ChangeNotifier {
     await api.logout();
     selectedIndex = 0;
     showingMyPage = false;
+    _pendingNavigation = null;
     notifyListeners();
   }
 
   void setSelectedIndex(int index) {
     selectedIndex = index;
     showingMyPage = false;
+    _pendingNavigation = null;
     notifyListeners();
   }
 
   void openMyPage() {
     showingMyPage = true;
+    _pendingNavigation = null;
     notifyListeners();
   }
 
   void refreshUser() {
     notifyListeners();
+  }
+
+  void refreshNotifications() {
+    notificationRefreshSeed++;
+    notifyListeners();
+  }
+
+  void navigateToSection(
+    int index, {
+    int? courseId,
+    int? assignmentId,
+    int? contentId,
+    String? courseHomeTab,
+  }) {
+    selectedIndex = index;
+    showingMyPage = false;
+    _pendingNavigation = AppNavigationRequest(
+      index: index,
+      courseId: courseId,
+      assignmentId: assignmentId,
+      contentId: contentId,
+      courseHomeTab: courseHomeTab,
+    );
+    notifyListeners();
+  }
+
+  AppNavigationRequest? takeNavigationRequestFor(int index) {
+    final pending = _pendingNavigation;
+    if (pending == null || pending.index != index) {
+      return null;
+    }
+    _pendingNavigation = null;
+    return pending;
   }
 
   String teamAlias(int teamId, String fallback) {
@@ -338,6 +376,22 @@ class AppController extends ChangeNotifier {
     }
     notifyListeners();
   }
+}
+
+class AppNavigationRequest {
+  const AppNavigationRequest({
+    required this.index,
+    this.courseId,
+    this.assignmentId,
+    this.contentId,
+    this.courseHomeTab,
+  });
+
+  final int index;
+  final int? courseId;
+  final int? assignmentId;
+  final int? contentId;
+  final String? courseHomeTab;
 }
 
 enum AuthMode { login, register }
@@ -394,7 +448,6 @@ class _LoginPageState extends State<LoginPage>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     final isRegister = mode == AuthMode.register;
 
     return Scaffold(
@@ -498,7 +551,7 @@ class _LoginPageState extends State<LoginPage>
                           children: [
                             Container(
                               padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(
+                              decoration: const BoxDecoration(
                                 color: AppTheme.surfaceAlt,
                                 borderRadius: AppTheme.radiusMedium,
                               ),
@@ -690,9 +743,7 @@ class _LoginPageState extends State<LoginPage>
                               width: double.infinity,
                               child: FilledButton(
                                 style: FilledButton.styleFrom(
-                                  backgroundColor: isRegister
-                                      ? colorScheme.primary
-                                      : const Color(0xFF0F172A),
+                                  backgroundColor: const Color(0xFF0F172A),
                                   foregroundColor: Colors.white,
                                   padding:
                                       const EdgeInsets.symmetric(vertical: 18),
@@ -929,14 +980,32 @@ class _AuthTextField extends StatelessWidget {
   }
 }
 
-class AppShell extends StatelessWidget {
+class AppShell extends StatefulWidget {
   const AppShell({super.key, required this.controller});
   final AppController controller;
+
+  @override
+  State<AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends State<AppShell> {
+  Future<void> _openNotificationCenter(
+    List<Map<String, dynamic>> notifications,
+  ) async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => _NotificationCenterDialog(
+        controller: widget.controller,
+        notifications: notifications,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final controller = widget.controller;
     final role = controller.user!.role;
     final items = role == UserRole.student
         ? [
@@ -1016,34 +1085,6 @@ class AppShell extends StatelessWidget {
                           ),
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 18),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: AppTheme.surfaceAlt,
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: AppTheme.border),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.search_rounded,
-                            size: 18,
-                            color: AppTheme.textMuted,
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            '메뉴 찾기',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: AppTheme.textMuted,
-                            ),
-                          ),
-                        ],
-                      ),
                     ),
                     const SizedBox(height: 18),
                     Expanded(
@@ -1164,41 +1205,26 @@ class AppShell extends StatelessWidget {
                               ],
                             ),
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 12,
+                          FutureBuilder<
+                              ApiResponse<List<Map<String, dynamic>>>>(
+                            key: ValueKey(
+                              '${controller.user?.userId}-${controller.notificationRefreshSeed}',
                             ),
-                            decoration: BoxDecoration(
-                              color: AppTheme.surfaceAlt,
-                              borderRadius: BorderRadius.circular(18),
-                              border: Border.all(color: AppTheme.border),
-                            ),
-                            child: const Row(
-                              children: [
-                                Icon(
-                                  Icons.search_rounded,
-                                  size: 18,
-                                  color: AppTheme.textMuted,
-                                ),
-                                SizedBox(width: 10),
-                                Text(
-                                  'Search',
-                                  style: TextStyle(
-                                    color: AppTheme.textMuted,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
+                            future: controller.api.getMyNotifications(),
+                            builder: (context, snapshot) {
+                              final notifications = snapshot.data?.data ?? [];
+                              final unreadCount = notifications
+                                  .where((item) => item['isRead'] != true)
+                                  .length;
+                              return _HeaderIconButton(
+                                icon: Icons.notifications_none_rounded,
+                                badgeCount: unreadCount,
+                                tooltip: '알림',
+                                onPressed: () =>
+                                    _openNotificationCenter(notifications),
+                              );
+                            },
                           ),
-                          const SizedBox(width: 10),
-                          _HeaderIconButton(
-                            icon: Icons.notifications_none_rounded,
-                            badgeCount: 3,
-                          ),
-                          const SizedBox(width: 10),
-                          _HeaderIconButton(icon: Icons.tune_rounded),
                         ],
                       ),
                     ),
@@ -1225,7 +1251,7 @@ class AppShell extends StatelessWidget {
   }
 
   String _pageTitle(UserRole role, int selectedIndex) {
-    if (controller.showingMyPage) {
+    if (widget.controller.showingMyPage) {
       return '내 프로필';
     }
     if (role == UserRole.student) {
@@ -1261,7 +1287,7 @@ class AppShell extends StatelessWidget {
   }
 
   String _pageSubtitle(UserRole role, int selectedIndex) {
-    if (controller.showingMyPage) {
+    if (widget.controller.showingMyPage) {
       return '프로필 정보와 개인 설정을 한 곳에서 관리합니다.';
     }
     if (role == UserRole.student) {
@@ -1297,6 +1323,7 @@ class AppShell extends StatelessWidget {
   }
 
   Widget _buildBody(UserRole role, int selectedIndex) {
+    final controller = widget.controller;
     if (controller.showingMyPage) {
       return MyPage(controller: controller);
     }
@@ -1486,6 +1513,8 @@ class _StudentDashboardPageState extends State<StudentDashboardPage> {
                                           .showSnackBar(SnackBar(
                                               content: Text(response.message)));
                                       if (response.success) {
+                                        widget.controller
+                                            .refreshNotifications();
                                         setState(() => refreshSeed++);
                                       }
                                     },
@@ -1643,6 +1672,7 @@ class StudentMyCoursesPage extends StatefulWidget {
 class _StudentMyCoursesPageState extends State<StudentMyCoursesPage> {
   int? selectedCourseId;
   int? selectedWeekId;
+  String? preferredCourseHomeTab;
 
   @override
   Widget build(BuildContext context) {
@@ -1653,6 +1683,15 @@ class _StudentMyCoursesPageState extends State<StudentMyCoursesPage> {
           return const Center(child: CircularProgressIndicator());
         }
         final courses = snapshot.data!.data ?? [];
+        final pendingNavigation = widget.controller.takeNavigationRequestFor(1);
+        if (pendingNavigation != null) {
+          selectedCourseId = pendingNavigation.courseId ?? selectedCourseId;
+          if (pendingNavigation.courseId != null) {
+            selectedWeekId = null;
+          }
+          preferredCourseHomeTab =
+              pendingNavigation.courseHomeTab ?? preferredCourseHomeTab;
+        }
         if (selectedCourseId == null && courses.isNotEmpty) {
           selectedCourseId = _asInt(courses.first['courseId']);
         }
@@ -1686,6 +1725,7 @@ class _StudentMyCoursesPageState extends State<StudentMyCoursesPage> {
                               setState(() {
                                 selectedCourseId = _asInt(course['courseId']);
                                 selectedWeekId = null;
+                                preferredCourseHomeTab = null;
                               });
                             },
                           ),
@@ -1699,6 +1739,7 @@ class _StudentMyCoursesPageState extends State<StudentMyCoursesPage> {
                 controller: widget.controller,
                 courseId: selectedCourseId!,
                 selectedWeekId: selectedWeekId,
+                preferredTab: preferredCourseHomeTab,
                 onWeekSelected: (weekId) =>
                     setState(() => selectedWeekId = weekId),
               ),
@@ -1720,12 +1761,14 @@ class _StudentCourseHomePanel extends StatefulWidget {
     required this.controller,
     required this.courseId,
     required this.selectedWeekId,
+    required this.preferredTab,
     required this.onWeekSelected,
   });
 
   final AppController controller;
   final int courseId;
   final int? selectedWeekId;
+  final String? preferredTab;
   final void Function(int weekId) onWeekSelected;
 
   @override
@@ -1735,6 +1778,20 @@ class _StudentCourseHomePanel extends StatefulWidget {
 
 class _StudentCourseHomePanelState extends State<_StudentCourseHomePanel> {
   String selectedTab = 'overview';
+
+  @override
+  void initState() {
+    super.initState();
+    selectedTab = widget.preferredTab ?? 'overview';
+  }
+
+  @override
+  void didUpdateWidget(covariant _StudentCourseHomePanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.preferredTab != null && widget.preferredTab != selectedTab) {
+      selectedTab = widget.preferredTab!;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -2153,6 +2210,13 @@ class _StudentCourseCatalogPageState extends State<StudentCourseCatalogPage> {
           return const Center(child: CircularProgressIndicator());
         }
         final courses = snapshot.data!.data ?? [];
+        final pendingNavigation = widget.controller.takeNavigationRequestFor(2);
+        if (pendingNavigation != null) {
+          selectedCourseId = pendingNavigation.courseId ?? selectedCourseId;
+          if (pendingNavigation.courseId != null) {
+            selectedWeekId = null;
+          }
+        }
         if (selectedCourseId == null && courses.isNotEmpty) {
           selectedCourseId = _asInt(courses.first['courseId']);
         }
@@ -2520,6 +2584,10 @@ class _StudentContentPageState extends State<StudentContentPage> {
           return const Center(child: CircularProgressIndicator());
         }
         final courses = snapshot.data!.data ?? [];
+        final pendingNavigation = widget.controller.takeNavigationRequestFor(3);
+        if (pendingNavigation != null) {
+          selectedCourseId = pendingNavigation.courseId ?? selectedCourseId;
+        }
         if (selectedCourseId == null && courses.isNotEmpty) {
           selectedCourseId = _asInt(courses.first['courseId']);
         }
@@ -2765,6 +2833,19 @@ class _StudentAssignmentPageState extends State<StudentAssignmentPage> {
           return const Center(child: CircularProgressIndicator());
         }
         final courses = snapshot.data!.data ?? [];
+        final pendingNavigation = widget.controller.takeNavigationRequestFor(4);
+        if (pendingNavigation != null) {
+          final requestedCourseId = pendingNavigation.courseId;
+          if (requestedCourseId != null &&
+              requestedCourseId != selectedCourseId) {
+            selectedCourseId = requestedCourseId;
+            selectedAssignmentId = pendingNavigation.assignmentId;
+          } else {
+            selectedCourseId = requestedCourseId ?? selectedCourseId;
+            selectedAssignmentId =
+                pendingNavigation.assignmentId ?? selectedAssignmentId;
+          }
+        }
         if (selectedCourseId == null && courses.isNotEmpty) {
           selectedCourseId = _asInt(courses.first['courseId']);
         }
@@ -3072,7 +3153,7 @@ class _StudentTeamPageState extends State<StudentTeamPage> {
 
                 return ListView(
                   children: [
-                    DashboardHeroCard(
+                    const DashboardHeroCard(
                       title: '팀 활동',
                       subtitle: '팀 카드를 눌러 설명, 개인 별칭, 대화창을 한 화면에서 볼 수 있습니다.',
                     ),
@@ -3427,8 +3508,9 @@ class InstructorDashboardPage extends StatelessWidget {
     return FutureBuilder<ApiResponse<List<Map<String, dynamic>>>>(
       future: controller.api.getMyCourses(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData)
+        if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
+        }
         final courses = snapshot.data!.data ?? [];
         final selectedCourseId =
             courses.isEmpty ? null : _asInt(courses.first['courseId']);
@@ -3642,10 +3724,15 @@ class _InstructorStudentsPageState extends State<InstructorStudentsPage> {
           widget.controller.api.getInstructorGradebook(selectedCourseId!),
       ]),
       builder: (context, snapshot) {
-        if (!snapshot.hasData)
+        if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
+        }
         final courses =
             snapshot.data!.first.data as List<Map<String, dynamic>>? ?? [];
+        final pendingNavigation = widget.controller.takeNavigationRequestFor(1);
+        if (pendingNavigation != null) {
+          selectedCourseId = pendingNavigation.courseId ?? selectedCourseId;
+        }
         if (selectedCourseId == null && courses.isNotEmpty) {
           selectedCourseId = _asInt(courses.first['courseId']);
         }
@@ -3826,8 +3913,9 @@ class _InstructorStudentsPageState extends State<InstructorStudentsPage> {
     return FutureBuilder<ApiResponse<List<Map<String, dynamic>>>>(
       future: widget.controller.api.getCourseStudents(courseId),
       builder: (context, snapshot) {
-        if (!snapshot.hasData)
+        if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
+        }
         final students = snapshot.data!.data ?? [];
         if (students.isEmpty) {
           return const SectionPanel(
@@ -4075,9 +4163,24 @@ class _InstructorCourseManagementPageState
       future: widget.controller.api.getMyCourses(),
       key: ValueKey(refreshSeed),
       builder: (context, snapshot) {
-        if (!snapshot.hasData)
+        if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
+        }
         final courses = snapshot.data!.data ?? [];
+        final pendingNavigation = widget.controller.takeNavigationRequestFor(2);
+        if (pendingNavigation != null) {
+          final requestedCourseId = pendingNavigation.courseId;
+          if (requestedCourseId != null &&
+              requestedCourseId != selectedCourseId) {
+            selectedCourseId = requestedCourseId;
+            selectedAssignmentId = pendingNavigation.assignmentId;
+            selectedSubmissionId = null;
+          } else {
+            selectedCourseId = requestedCourseId ?? selectedCourseId;
+            selectedAssignmentId =
+                pendingNavigation.assignmentId ?? selectedAssignmentId;
+          }
+        }
         if (selectedCourseId == null && courses.isNotEmpty) {
           selectedCourseId = _asInt(courses.first['courseId']);
         }
@@ -4225,8 +4328,9 @@ class _InstructorCourseManagementPageState
     return FutureBuilder<ApiResponse<Map<String, dynamic>>>(
       future: widget.controller.api.getCourseDetail(courseId),
       builder: (context, snapshot) {
-        if (!snapshot.hasData)
+        if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
+        }
         final course = snapshot.data!.data ?? {};
         final weeks = ((course['weeks'] as List<dynamic>?) ?? const [])
             .whereType<Map<String, dynamic>>()
@@ -4342,8 +4446,9 @@ class _InstructorCourseManagementPageState
     return FutureBuilder<ApiResponse<List<Map<String, dynamic>>>>(
       future: widget.controller.api.getWeekContents(courseId, weekId),
       builder: (context, snapshot) {
-        if (!snapshot.hasData)
+        if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
+        }
         final contents = snapshot.data!.data ?? [];
 
         return SectionPanel(
@@ -5065,8 +5170,9 @@ class _MyPageState extends State<MyPage> {
       key: ValueKey(refreshSeed),
       future: widget.controller.api.getMyProfile(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData)
+        if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
+        }
         final profile = snapshot.data!.data ?? {};
         if (nameController.text.trim().isEmpty) {
           nameController.text = _displayText(profile['name'], emptyMessage: '');
@@ -5275,8 +5381,9 @@ class _InstructorTeamAnalysisPageState
       future: widget.controller.api.getMyCourses(),
       key: ValueKey(refreshSeed),
       builder: (context, snapshot) {
-        if (!snapshot.hasData)
+        if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
+        }
         final courses = snapshot.data!.data ?? [];
         if (selectedCourseId == null && courses.isNotEmpty) {
           selectedCourseId = _asInt(courses.first['courseId']);
@@ -5336,8 +5443,9 @@ class _InstructorTeamAnalysisPageState
     return FutureBuilder<ApiResponse<List<Map<String, dynamic>>>>(
       future: widget.controller.api.getCourseTeams(courseId),
       builder: (context, snapshot) {
-        if (!snapshot.hasData)
+        if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
+        }
         final teams = snapshot.data!.data ?? [];
         if (selectedTeamId == null && teams.isNotEmpty) {
           selectedTeamId = _asInt(teams.first['teamId']);
@@ -5413,8 +5521,9 @@ class _InstructorTeamAnalysisPageState
         widget.controller.api.getTeamMemberContributions(teamId),
       ]),
       builder: (context, snapshot) {
-        if (!snapshot.hasData)
+        if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
+        }
         final detail = snapshot.data![0].data as Map<String, dynamic>? ?? {};
         final analytics = snapshot.data![1].data as Map<String, dynamic>? ?? {};
         final contributions =
@@ -5654,12 +5763,12 @@ class MetricCard extends StatelessWidget {
   });
   final String label;
   final String value;
-  final _StatusTone? tone;
+  final StatusTone? tone;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final resolvedTone = tone ?? _StatusTone.neutral();
+    final resolvedTone = tone ?? StatusTone.neutral();
     return Container(
       width: 190,
       padding: AppTheme.cardPadding,
@@ -5965,10 +6074,17 @@ class _SidebarNavButton extends StatelessWidget {
 }
 
 class _HeaderIconButton extends StatelessWidget {
-  const _HeaderIconButton({required this.icon, this.badgeCount});
+  const _HeaderIconButton({
+    required this.icon,
+    required this.onPressed,
+    this.badgeCount,
+    this.tooltip,
+  });
 
   final IconData icon;
+  final VoidCallback onPressed;
   final int? badgeCount;
+  final String? tooltip;
 
   @override
   Widget build(BuildContext context) {
@@ -5983,7 +6099,8 @@ class _HeaderIconButton extends StatelessWidget {
             border: Border.all(color: AppTheme.border),
           ),
           child: IconButton(
-            onPressed: () {},
+            tooltip: tooltip,
+            onPressed: onPressed,
             icon: Icon(icon, color: AppTheme.textSecondary, size: 20),
           ),
         ),
@@ -6015,8 +6132,257 @@ class _HeaderIconButton extends StatelessWidget {
   }
 }
 
-class _StatusTone {
-  const _StatusTone({
+class _NotificationCenterDialog extends StatelessWidget {
+  const _NotificationCenterDialog({
+    required this.controller,
+    required this.notifications,
+  });
+
+  final AppController controller;
+  final List<Map<String, dynamic>> notifications;
+
+  @override
+  Widget build(BuildContext context) {
+    final unreadCount =
+        notifications.where((item) => item['isRead'] != true).length;
+    return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 560, maxHeight: 720),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '알림',
+                          style: Theme.of(context).textTheme.headlineSmall,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          unreadCount > 0
+                              ? '읽지 않은 알림 $unreadCount개'
+                              : '새 알림이 없습니다.',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: notifications.isEmpty
+                    ? const EmptyStateCard(
+                        title: '도착한 알림이 없습니다',
+                        description: '새 공지, 콘텐츠, 과제, 채점 결과가 생기면 이곳에 표시됩니다.',
+                      )
+                    : ListView.separated(
+                        itemCount: notifications.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final notification = notifications[index];
+                          final isRead = notification['isRead'] == true;
+                          return InkWell(
+                            borderRadius: BorderRadius.circular(20),
+                            onTap: () async {
+                              if (!isRead) {
+                                await controller.api.readNotification(
+                                  _asInt(notification['notificationId']),
+                                );
+                              }
+                              if (!context.mounted) {
+                                return;
+                              }
+                              controller.refreshNotifications();
+                              _openNotificationTarget(controller, notification);
+                              Navigator.of(context).pop();
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(18),
+                              decoration: AppTheme.panelDecoration(
+                                background: isRead
+                                    ? Colors.white
+                                    : const Color(0xFFF8FAFF),
+                                borderColor: isRead
+                                    ? AppTheme.border
+                                    : const Color(0xFFC7D8FE),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 6,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: isRead
+                                              ? AppTheme.surfaceAlt
+                                              : AppTheme.primaryContainer,
+                                          borderRadius:
+                                              BorderRadius.circular(999),
+                                        ),
+                                        child: Text(
+                                          _notificationTypeLabel(
+                                            _displayText(notification['type']),
+                                          ),
+                                          style: TextStyle(
+                                            color: isRead
+                                                ? AppTheme.textSecondary
+                                                : AppTheme.primary,
+                                            fontWeight: FontWeight.w800,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                      const Spacer(),
+                                      if (!isRead)
+                                        Container(
+                                          width: 10,
+                                          height: 10,
+                                          decoration: const BoxDecoration(
+                                            color: AppTheme.primary,
+                                            shape: BoxShape.circle,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    _displayText(notification['title']),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(fontWeight: FontWeight.w800),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    _displayText(notification['content']),
+                                    style:
+                                        Theme.of(context).textTheme.bodyMedium,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    children: [
+                                      Text(
+                                        _displayText(notification['createdAt']),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall,
+                                      ),
+                                      const Spacer(),
+                                      Text(
+                                        '관련 화면 보기',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                              color: AppTheme.primary,
+                                              fontWeight: FontWeight.w800,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+void _openNotificationTarget(
+  AppController controller,
+  Map<String, dynamic> notification,
+) {
+  final targetPage = _displayText(notification['targetPage'], emptyMessage: '');
+  final courseId = _readNullableInt(notification['courseId']);
+  final assignmentId = _readNullableInt(notification['assignmentId']);
+  final contentId = _readNullableInt(notification['contentId']);
+  switch (targetPage) {
+    case 'STUDENT_MY_COURSES':
+      controller.navigateToSection(
+        1,
+        courseId: courseId,
+        courseHomeTab:
+            _displayText(notification['targetTab'], emptyMessage: 'overview'),
+      );
+      return;
+    case 'STUDENT_COURSE_CATALOG':
+      controller.navigateToSection(2, courseId: courseId);
+      return;
+    case 'STUDENT_CONTENT':
+      controller.navigateToSection(
+        3,
+        courseId: courseId,
+        contentId: contentId,
+      );
+      return;
+    case 'STUDENT_ASSIGNMENTS':
+      controller.navigateToSection(
+        4,
+        courseId: courseId,
+        assignmentId: assignmentId,
+      );
+      return;
+    case 'INSTRUCTOR_STUDENTS':
+      controller.navigateToSection(1, courseId: courseId);
+      return;
+    case 'INSTRUCTOR_COURSE_MANAGEMENT':
+      controller.navigateToSection(
+        2,
+        courseId: courseId,
+        assignmentId: assignmentId,
+      );
+      return;
+    default:
+      controller.refreshNotifications();
+  }
+}
+
+String _notificationTypeLabel(String type) {
+  switch (type) {
+    case 'COURSE_ANNOUNCEMENT':
+      return '공지';
+    case 'NEW_CONTENT':
+      return '콘텐츠';
+    case 'ASSIGNMENT_CREATED':
+      return '과제';
+    case 'ASSIGNMENT_GRADED':
+      return '채점';
+    case 'COURSE_PUBLISHED':
+      return '강의';
+    case 'ASSIGNMENT_SUBMITTED':
+      return '제출';
+    case 'COURSE_ENROLLED':
+      return '수강';
+    default:
+      return '알림';
+  }
+}
+
+class StatusTone {
+  const StatusTone({
     required this.background,
     required this.border,
     required this.foreground,
@@ -6026,8 +6392,8 @@ class _StatusTone {
   final Color border;
   final Color foreground;
 
-  factory _StatusTone.neutral() {
-    return const _StatusTone(
+  factory StatusTone.neutral() {
+    return const StatusTone(
       background: AppTheme.surfaceAlt,
       border: AppTheme.borderStrong,
       foreground: AppTheme.textSecondary,
@@ -6035,30 +6401,30 @@ class _StatusTone {
   }
 }
 
-_StatusTone _statusToneFor(String label, String value) {
+StatusTone _statusToneFor(String label, String value) {
   final normalized = value.trim().toUpperCase();
   if (label.contains('위험') || normalized == 'HIGH' || value.contains('주의')) {
-    return const _StatusTone(
+    return const StatusTone(
       background: Color(0xFFFDEDEA),
       border: Color(0xFFF3B4AA),
       foreground: Color(0xFFB9382A),
     );
   }
   if (normalized == 'MEDIUM' || value.contains('관찰') || value.contains('비공개')) {
-    return const _StatusTone(
+    return const StatusTone(
       background: Color(0xFFFFF7ED),
       border: Color(0xFFFAC58C),
       foreground: Color(0xFFB45309),
     );
   }
   if (normalized == 'LOW' || value.contains('안정') || value.contains('공개')) {
-    return const _StatusTone(
+    return const StatusTone(
       background: Color(0xFFEFFBF3),
       border: Color(0xFFBBE7C9),
       foreground: Color(0xFF15803D),
     );
   }
-  return _StatusTone.neutral();
+  return StatusTone.neutral();
 }
 
 ImageProvider<Object>? _profileImageProvider(String? url) {
@@ -6073,6 +6439,19 @@ int _asInt(dynamic value) {
   if (value is int) return value;
   if (value is num) return value.toInt();
   return int.tryParse('$value') ?? 0;
+}
+
+int? _readNullableInt(dynamic value) {
+  if (value == null) {
+    return null;
+  }
+  if (value is int) {
+    return value;
+  }
+  if (value is num) {
+    return value.toInt();
+  }
+  return int.tryParse('$value');
 }
 
 String _displayText(dynamic value, {String emptyMessage = '아직 정보가 없습니다.'}) {

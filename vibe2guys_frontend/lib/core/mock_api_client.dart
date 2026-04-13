@@ -6,11 +6,20 @@ import 'api_contract.dart';
 class MockApiClient implements ApiClient {
   String? _accessToken;
   AppUser? _currentUser;
+  final List<Map<String, dynamic>> _studentNotifications =
+      _buildStudentNotifications();
+  final List<Map<String, dynamic>> _instructorNotifications =
+      _buildInstructorNotifications();
 
   @override
   String? get accessToken => _accessToken;
   @override
   AppUser? get currentUser => _currentUser;
+
+  List<Map<String, dynamic>> get _currentNotifications =>
+      _currentUser?.role == UserRole.instructor
+          ? _instructorNotifications
+          : _studentNotifications;
 
   @override
   Future<ApiResponse<Map<String, dynamic>>> register({
@@ -723,29 +732,12 @@ class MockApiClient implements ApiClient {
     final unauthorized = _unauthorized<List<Map<String, dynamic>>>();
     if (unauthorized != null) return unauthorized;
     await Future<void>.delayed(const Duration(milliseconds: 140));
-    return const ApiResponse(
+    return ApiResponse(
       success: true,
       message: '알림 조회 성공',
-      data: [
-        {
-          'notificationId': 1,
-          'type': 'ASSIGNMENT_CREATED',
-          'title': '새 과제가 등록되었습니다.',
-          'content': '1주차 요약 과제를 확인하고 마감 일정을 체크하세요.',
-          'isRead': false,
-          'createdAt': '2026-04-13T09:00:00+09:00',
-          'readAt': null,
-        },
-        {
-          'notificationId': 2,
-          'type': 'NEW_CONTENT',
-          'title': '새 학습 콘텐츠가 등록되었습니다.',
-          'content': '3주차 강의 영상을 확인해보세요.',
-          'isRead': true,
-          'createdAt': '2026-04-12T18:00:00+09:00',
-          'readAt': '2026-04-12T18:30:00+09:00',
-        },
-      ],
+      data: _currentNotifications
+          .map((notification) => Map<String, dynamic>.from(notification))
+          .toList(),
     );
   }
 
@@ -755,12 +747,21 @@ class MockApiClient implements ApiClient {
     final unauthorized = _unauthorized<Map<String, dynamic>>();
     if (unauthorized != null) return unauthorized;
     await Future<void>.delayed(const Duration(milliseconds: 100));
+    final notifications = _currentNotifications;
+    final index = notifications.indexWhere(
+      (notification) => notification['notificationId'] == notificationId,
+    );
+    final readAt = DateTime.now().toIso8601String();
+    if (index >= 0) {
+      notifications[index]['isRead'] = true;
+      notifications[index]['readAt'] = readAt;
+    }
     return ApiResponse(
       success: true,
       message: '알림 읽음 처리 완료',
       data: {
         'notificationId': notificationId,
-        'readAt': DateTime.now().toIso8601String(),
+        'readAt': readAt,
       },
     );
   }
@@ -1599,4 +1600,107 @@ class MockApiClient implements ApiClient {
     }
     return null;
   }
+}
+
+List<Map<String, dynamic>> _buildStudentNotifications() {
+  return [
+    {
+      'notificationId': 1,
+      'type': 'COURSE_ANNOUNCEMENT',
+      'title': '김교수님이 새 공지를 등록했습니다.',
+      'content': 'AI 기초 강의 공지에서 중간 프로젝트 안내를 확인해보세요.',
+      'isRead': false,
+      'createdAt': '2026-04-13T09:20:00+09:00',
+      'readAt': null,
+      'targetPage': 'STUDENT_MY_COURSES',
+      'targetTab': 'announcements',
+      'courseId': 101,
+    },
+    {
+      'notificationId': 2,
+      'type': 'NEW_CONTENT',
+      'title': '새 강의 콘텐츠가 열렸습니다.',
+      'content': 'AI 기초의 3주차 강의 영상이 올라왔습니다.',
+      'isRead': false,
+      'createdAt': '2026-04-13T08:40:00+09:00',
+      'readAt': null,
+      'targetPage': 'STUDENT_CONTENT',
+      'courseId': 101,
+      'contentId': 5004,
+    },
+    {
+      'notificationId': 3,
+      'type': 'ASSIGNMENT_CREATED',
+      'title': '새 과제가 등록되었습니다.',
+      'content': '1주차 요약 과제를 확인하고 마감 일정을 체크하세요.',
+      'isRead': false,
+      'createdAt': '2026-04-13T07:55:00+09:00',
+      'readAt': null,
+      'targetPage': 'STUDENT_ASSIGNMENTS',
+      'courseId': 101,
+      'assignmentId': 7001,
+    },
+    {
+      'notificationId': 4,
+      'type': 'ASSIGNMENT_GRADED',
+      'title': '제출한 과제가 채점되었습니다.',
+      'content': '2주차 개념 비교 과제에 피드백이 등록되었습니다.',
+      'isRead': true,
+      'createdAt': '2026-04-12T18:10:00+09:00',
+      'readAt': '2026-04-12T18:25:00+09:00',
+      'targetPage': 'STUDENT_ASSIGNMENTS',
+      'courseId': 101,
+      'assignmentId': 7002,
+    },
+    {
+      'notificationId': 5,
+      'type': 'COURSE_PUBLISHED',
+      'title': '새로운 공개 강의가 올라왔습니다.',
+      'content': '생성형 AI 입문 강의가 공개되어 지금 바로 둘러볼 수 있습니다.',
+      'isRead': true,
+      'createdAt': '2026-04-12T10:30:00+09:00',
+      'readAt': '2026-04-12T10:45:00+09:00',
+      'targetPage': 'STUDENT_COURSE_CATALOG',
+      'courseId': 301,
+    },
+  ];
+}
+
+List<Map<String, dynamic>> _buildInstructorNotifications() {
+  return [
+    {
+      'notificationId': 101,
+      'type': 'ASSIGNMENT_SUBMITTED',
+      'title': '새 과제 제출이 도착했습니다.',
+      'content': '홍길동 학생이 AI 기초의 1주차 요약 과제를 제출했습니다.',
+      'isRead': false,
+      'createdAt': '2026-04-13T09:05:00+09:00',
+      'readAt': null,
+      'targetPage': 'INSTRUCTOR_COURSE_MANAGEMENT',
+      'courseId': 101,
+      'assignmentId': 7001,
+    },
+    {
+      'notificationId': 102,
+      'type': 'COURSE_ENROLLED',
+      'title': '새 수강 신청이 등록되었습니다.',
+      'content': '데이터 사고법 강의에 김학생이 새로 등록했습니다.',
+      'isRead': false,
+      'createdAt': '2026-04-13T08:10:00+09:00',
+      'readAt': null,
+      'targetPage': 'INSTRUCTOR_STUDENTS',
+      'courseId': 102,
+    },
+    {
+      'notificationId': 103,
+      'type': 'COURSE_ANNOUNCEMENT',
+      'title': '중요 공지가 상단에 고정되었습니다.',
+      'content': 'AI 기초 강의 공지가 학생 강의 홈 상단에 노출 중입니다.',
+      'isRead': true,
+      'createdAt': '2026-04-12T17:00:00+09:00',
+      'readAt': '2026-04-12T17:30:00+09:00',
+      'targetPage': 'INSTRUCTOR_COURSE_MANAGEMENT',
+      'courseId': 101,
+    },
+  ];
 }
