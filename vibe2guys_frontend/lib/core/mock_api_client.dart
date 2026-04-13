@@ -776,7 +776,7 @@ class MockApiClient implements ApiClient {
       message: '내 팀 조회 성공',
       data: {
         'teamId': 3001,
-        'teamName': '1팀',
+        'teamName': 'AI 기초 : 1팀',
         'courseId': 101,
         'teamBuildingScore': 82,
         'matchingSummary': '추진형, 분석형, 조율형을 섞어 역할 분담이 자연스럽게 일어나도록 구성했습니다.',
@@ -801,7 +801,7 @@ class MockApiClient implements ApiClient {
       data: [
         {
           'teamId': 3001,
-          'name': '1팀',
+          'name': 'AI 기초 : 1팀',
           'memberCount': 3,
           'status': 'ACTIVE',
           'teamBuildingScore': 82,
@@ -809,7 +809,7 @@ class MockApiClient implements ApiClient {
         },
         {
           'teamId': 3002,
-          'name': '2팀',
+          'name': 'AI 기초 : 2팀',
           'memberCount': 3,
           'status': 'ACTIVE',
           'teamBuildingScore': 76,
@@ -836,7 +836,7 @@ class MockApiClient implements ApiClient {
         'teams': [
           {
             'teamId': 3001,
-            'name': '1팀',
+            'name': 'AI 기초 : 1팀',
             'memberCount': 3,
             'status': 'ACTIVE',
             'teamBuildingScore': 82,
@@ -844,7 +844,7 @@ class MockApiClient implements ApiClient {
           },
           {
             'teamId': 3002,
-            'name': '2팀',
+            'name': 'AI 기초 : 2팀',
             'memberCount': 3,
             'status': 'ACTIVE',
             'teamBuildingScore': 76,

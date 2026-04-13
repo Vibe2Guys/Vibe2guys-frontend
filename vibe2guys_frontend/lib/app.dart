@@ -53,6 +53,7 @@ class AppController extends ChangeNotifier {
   bool _loading = false;
   int selectedIndex = 0;
   bool showingMyPage = false;
+  final Map<int, String> _teamAliases = {};
 
   bool get loading => _loading;
   bool get isAuthenticated =>
@@ -111,6 +112,22 @@ class AppController extends ChangeNotifier {
   }
 
   void refreshUser() {
+    notifyListeners();
+  }
+
+  String teamAlias(int teamId, String fallback) {
+    return _teamAliases[teamId]?.trim().isNotEmpty == true
+        ? _teamAliases[teamId]!
+        : fallback;
+  }
+
+  void setTeamAlias(int teamId, String alias) {
+    final normalized = alias.trim();
+    if (normalized.isEmpty) {
+      _teamAliases.remove(teamId);
+    } else {
+      _teamAliases[teamId] = normalized;
+    }
     notifyListeners();
   }
 }
@@ -1839,67 +1856,213 @@ class _StudentAssignmentPageState extends State<StudentAssignmentPage> {
   }
 }
 
-class StudentTeamPage extends StatelessWidget {
+class StudentTeamPage extends StatefulWidget {
   const StudentTeamPage({super.key, required this.controller});
   final AppController controller;
+
+  @override
+  State<StudentTeamPage> createState() => _StudentTeamPageState();
+}
+
+class _StudentTeamPageState extends State<StudentTeamPage> {
+  final TextEditingController aliasController = TextEditingController();
+  bool editingAlias = false;
+
+  @override
+  void dispose() {
+    aliasController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<ApiResponse<dynamic>>>(
       future: Future.wait<ApiResponse<dynamic>>([
-        controller.api.getMyTeam(),
-        controller.api.getTeamDetail(3001),
-        controller.api.getTeamChatRoom(3001),
-        controller.api.getChatMessages(4001),
+        widget.controller.api.getMyTeam(),
+        widget.controller.api.getTeamDetail(3001),
+        widget.controller.api.getTeamChatRoom(3001),
+        widget.controller.api.getChatMessages(4001),
       ]),
       builder: (context, snapshot) {
-        if (!snapshot.hasData)
+        if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
+        }
         final responses = snapshot.data!;
-        final team = responses[0].data as Map<String, dynamic>;
-        final detail = responses[1].data as Map<String, dynamic>;
-        final messages = responses[3].data as List<Map<String, dynamic>>;
+        final team = responses[0].data as Map<String, dynamic>? ?? {};
+        final detail = responses[1].data as Map<String, dynamic>? ?? {};
+        final messages = responses[3].data as List<Map<String, dynamic>>? ?? [];
+        final teamId = _asInt(detail['teamId'] ?? team['teamId']);
+        final defaultTeamName = _displayText(
+          detail['teamName'] ?? detail['name'] ?? team['teamName'],
+          emptyMessage: '배정된 팀이 없습니다',
+        );
+        final displayTeamName =
+            widget.controller.teamAlias(teamId, defaultTeamName);
+        if (aliasController.text.trim().isEmpty && editingAlias == false) {
+          aliasController.text = displayTeamName;
+        }
         final members = (detail['members'] as List<dynamic>? ?? const [])
             .whereType<Map<String, dynamic>>()
             .map((e) => _displayText(e['name'], emptyMessage: '이름 없음'))
             .toList();
-        final teamName = _displayText(
-          detail['teamName'] ?? team['teamName'],
-          emptyMessage: '배정된 팀이 없습니다',
-        );
 
         return ListView(
           children: [
             DashboardHeroCard(
               title: '팀 활동',
-              subtitle: messages.isEmpty
-                  ? '팀 활동이 시작되면 대화와 협업 현황이 여기에 표시됩니다.'
-                  : '팀원과의 협업 내용과 최근 대화를 확인할 수 있습니다.',
+              subtitle: '팀 카드를 눌러 설명, 개인 별칭, 대화창을 한 화면에서 볼 수 있습니다.',
             ),
             const SizedBox(height: 16),
-            InfoCard(
-              title: '$teamName (협업점수 ${_asInt(detail['collaborationScore'])})',
-              content: members.isEmpty
-                  ? '아직 표시할 팀원 정보가 없습니다.'
-                  : '팀원: ${members.join(', ')}',
-            ),
-            const SizedBox(height: 12),
-            if (messages.isEmpty)
-              const EmptyStateCard(
-                title: '팀 대화가 아직 없습니다',
-                description: '메시지가 쌓이면 이 영역에서 팀 대화를 바로 볼 수 있습니다.',
-              )
-            else
-              ...messages.map(
-                (message) => Card(
-                  child: ListTile(
-                    title: Text(_displayText(message['senderName'],
-                        emptyMessage: '알 수 없음')),
-                    subtitle: Text(_displayText(message['message'])),
-                    trailing: Text(_timeLabel(message['sentAt'])),
-                  ),
-                ),
+            SectionPanel(
+              title: '내 팀',
+              child: _SelectionCard(
+                title: displayTeamName,
+                description:
+                    '원래 팀명: $defaultTeamName\n협업점수 ${_asInt(detail['collaborationScore'])} · 팀 빌딩 ${_asInt(detail['teamBuildingScore'])}',
+                selected: true,
+                onTap: () {},
               ),
+            ),
+            const SizedBox(height: 16),
+            SectionPanel(
+              title: '팀 설명',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  InfoCard(
+                    title: displayTeamName,
+                    content: _displayText(
+                      detail['matchingSummary'],
+                      emptyMessage: '팀 설명이 아직 없습니다.',
+                    ),
+                  ),
+                  InfoCard(
+                    title: '팀원 구성',
+                    content: members.isEmpty
+                        ? '아직 팀원 정보가 없습니다.'
+                        : members.join(', '),
+                  ),
+                  const SizedBox(height: 8),
+                  if (editingAlias) ...[
+                    _AuthTextField(
+                      controller: aliasController,
+                      label: '내 화면용 팀명',
+                      hintText: '예: AI 기초 : 발표팀',
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        FilledButton.tonal(
+                          onPressed: () {
+                            widget.controller
+                                .setTeamAlias(teamId, aliasController.text);
+                            setState(() {
+                              editingAlias = false;
+                            });
+                          },
+                          child: const Text('개인 팀명 저장'),
+                        ),
+                        const SizedBox(width: 10),
+                        TextButton(
+                          onPressed: () {
+                            aliasController.text = defaultTeamName;
+                            widget.controller.setTeamAlias(teamId, '');
+                            setState(() {
+                              editingAlias = false;
+                            });
+                          },
+                          child: const Text('원래 팀명으로'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      '이 팀명은 내 화면에만 적용됩니다.',
+                      style: TextStyle(color: Color(0xFF64757B)),
+                    ),
+                  ] else
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: FilledButton.tonal(
+                        onPressed: () {
+                          aliasController.text = displayTeamName;
+                          setState(() {
+                            editingAlias = true;
+                          });
+                        },
+                        child: const Text('개인 팀명 바꾸기'),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            SectionPanel(
+              title: '팀 대화창',
+              child: messages.isEmpty
+                  ? const EmptyStateCard(
+                      title: '팀 대화가 아직 없습니다',
+                      description: '대화가 시작되면 여기에서 바로 이어서 볼 수 있습니다.',
+                    )
+                  : Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF9FCFB),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFDCE8E4)),
+                      ),
+                      child: Column(
+                        children: messages
+                            .map(
+                              (message) => Align(
+                                alignment: Alignment.centerLeft,
+                                child: Container(
+                                  width: double.infinity,
+                                  margin: const EdgeInsets.only(bottom: 10),
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                      color: const Color(0xFFDCE8E4),
+                                    ),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Text(
+                                            _displayText(
+                                              message['senderName'],
+                                              emptyMessage: '알 수 없음',
+                                            ),
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w800,
+                                            ),
+                                          ),
+                                          const Spacer(),
+                                          Text(
+                                            _timeLabel(message['sentAt']),
+                                            style: const TextStyle(
+                                              color: Color(0xFF75848A),
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(_displayText(message['message'])),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ),
+            ),
             const SizedBox(height: 10),
             const EndpointChip(label: 'GET ${Endpoints.teamsMe}'),
             EndpointChip(label: 'GET ${Endpoints.teamDetail(3001)}'),
