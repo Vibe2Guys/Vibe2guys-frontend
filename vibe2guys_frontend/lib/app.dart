@@ -690,7 +690,10 @@ class _LoginPageState extends State<LoginPage>
                               width: double.infinity,
                               child: FilledButton(
                                 style: FilledButton.styleFrom(
-                                  backgroundColor: colorScheme.primary,
+                                  backgroundColor: isRegister
+                                      ? colorScheme.primary
+                                      : const Color(0xFF0F172A),
+                                  foregroundColor: Colors.white,
                                   padding:
                                       const EdgeInsets.symmetric(vertical: 18),
                                 ),
