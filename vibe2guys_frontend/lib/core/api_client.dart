@@ -36,8 +36,18 @@ abstract class ApiClient {
     required String courseCode,
   });
   Future<ApiResponse<Map<String, dynamic>>> getCourseDetail(int courseId);
+  Future<ApiResponse<Map<String, dynamic>>> getCourseHome(int courseId);
+  Future<ApiResponse<List<Map<String, dynamic>>>> getCourseAnnouncements(
+      int courseId);
+  Future<ApiResponse<Map<String, dynamic>>> createCourseAnnouncement({
+    required int courseId,
+    required String title,
+    required String body,
+    required bool pinned,
+  });
   Future<ApiResponse<List<Map<String, dynamic>>>> getMyLearningLogs(
       int courseId);
+  Future<ApiResponse<Map<String, dynamic>>> getMyCourseGradebook(int courseId);
   Future<ApiResponse<List<Map<String, dynamic>>>> getCourseStudents(
       int courseId);
   Future<ApiResponse<Map<String, dynamic>>> updateCourseStudentMemo({
@@ -86,6 +96,7 @@ abstract class ApiClient {
     required String description,
     required String type,
     required String dueAt,
+    required int maxScore,
     required bool teamAssignment,
   });
   Future<ApiResponse<List<Map<String, dynamic>>>> getCourseQuizzes(
@@ -99,6 +110,14 @@ abstract class ApiClient {
   });
   Future<ApiResponse<Map<String, dynamic>>> getAssignmentDetail(
       int assignmentId);
+  Future<ApiResponse<List<Map<String, dynamic>>>> getAssignmentSubmissions(
+      int assignmentId);
+  Future<ApiResponse<Map<String, dynamic>>> gradeAssignmentSubmission({
+    required int assignmentId,
+    required int submissionId,
+    required int score,
+    required String feedback,
+  });
   Future<ApiResponse<Map<String, dynamic>>> submitAssignment({
     required int assignmentId,
     required String answerText,

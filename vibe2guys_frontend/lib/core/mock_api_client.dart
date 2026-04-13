@@ -272,6 +272,126 @@ class MockApiClient implements ApiClient {
   }
 
   @override
+  Future<ApiResponse<Map<String, dynamic>>> getCourseHome(int courseId) async {
+    final unauthorized = _unauthorized<Map<String, dynamic>>();
+    if (unauthorized != null) return unauthorized;
+    await Future<void>.delayed(const Duration(milliseconds: 180));
+    return const ApiResponse(
+      success: true,
+      message: '강의 홈 조회 성공',
+      data: {
+        'courseId': 101,
+        'title': 'AI 기초',
+        'description': 'AI 개론 수업입니다.',
+        'courseCode': 'CRS-AI000101',
+        'isPublic': true,
+        'instructorName': '김교수',
+        'progressRate': 72,
+        'attendanceRate': 85,
+        'pendingTaskCount': 3,
+        'recentLearningTitle': '2주차 강의 영상',
+        'recentLearningAt': '2026-04-12T10:30:00+09:00',
+        'announcements': [
+          {
+            'announcementId': 1,
+            'title': '중간 프로젝트 안내',
+            'body': '이번 주 안에 팀별 주제를 확정해 주세요.',
+            'pinned': true,
+            'createdByName': '김교수',
+            'createdAt': '2026-04-11T09:00:00+09:00',
+          },
+          {
+            'announcementId': 2,
+            'title': '2주차 보강 자료 업로드',
+            'body': '개념 정리 PDF를 강의 자료에 추가했습니다.',
+            'pinned': false,
+            'createdByName': '김교수',
+            'createdAt': '2026-04-10T18:20:00+09:00',
+          },
+        ],
+        'todos': [
+          {
+            'category': 'ASSIGNMENT',
+            'referenceId': 7001,
+            'title': '1주차 요약 과제',
+            'status': '제출 필요',
+            'scheduleAt': '2026-04-15T23:59:59+09:00',
+            'summary': '과제',
+          },
+          {
+            'category': 'QUIZ',
+            'referenceId': 6001,
+            'title': '1주차 퀴즈',
+            'status': '응시 필요',
+            'scheduleAt': '2026-04-16T23:59:59+09:00',
+            'summary': '퀴즈',
+          },
+          {
+            'category': 'CONTENT',
+            'referenceId': 5004,
+            'title': '3주차 강의 영상',
+            'status': '예정',
+            'scheduleAt': '2026-04-18T09:00:00+09:00',
+            'summary': '콘텐츠 오픈 예정',
+          },
+        ],
+        'weeks': [
+          {
+            'weekId': 1001,
+            'weekNumber': 1,
+            'title': 'AI란 무엇인가',
+            'isOpened': true
+          },
+          {
+            'weekId': 1002,
+            'weekNumber': 2,
+            'title': '지도학습 기초',
+            'isOpened': true
+          },
+        ],
+      },
+    );
+  }
+
+  @override
+  Future<ApiResponse<List<Map<String, dynamic>>>> getCourseAnnouncements(
+      int courseId) async {
+    final response = await getCourseHome(courseId);
+    return ApiResponse(
+      success: response.success,
+      message: '강의 공지 조회 성공',
+      data: ((response.data?['announcements'] as List<dynamic>?) ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .toList(),
+      errorCode: response.errorCode,
+    );
+  }
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> createCourseAnnouncement({
+    required int courseId,
+    required String title,
+    required String body,
+    required bool pinned,
+  }) async {
+    final unauthorized = _unauthorized<Map<String, dynamic>>();
+    if (unauthorized != null) return unauthorized;
+    await Future<void>.delayed(const Duration(milliseconds: 140));
+    return ApiResponse(
+      success: true,
+      message: '강의 공지 등록 완료',
+      data: {
+        'announcementId': 99,
+        'title': title,
+        'body': body,
+        'pinned': pinned,
+        'createdByName': _currentUser?.name ?? '김교수',
+        'createdAt': DateTime.now().toIso8601String(),
+      },
+    );
+  }
+
+  @override
   Future<ApiResponse<List<Map<String, dynamic>>>> getMyLearningLogs(
       int courseId) async {
     final unauthorized = _unauthorized<List<Map<String, dynamic>>>();
@@ -309,6 +429,67 @@ class MockApiClient implements ApiClient {
           'attendanceMinutes': 18,
         },
       ],
+    );
+  }
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> getMyCourseGradebook(
+      int courseId) async {
+    final unauthorized = _unauthorized<Map<String, dynamic>>();
+    if (unauthorized != null) return unauthorized;
+    await Future<void>.delayed(const Duration(milliseconds: 180));
+    return const ApiResponse(
+      success: true,
+      message: '내 성적 조회 성공',
+      data: {
+        'courseId': 101,
+        'courseTitle': 'AI 기초',
+        'attendanceRate': 85,
+        'progressRate': 72,
+        'assignmentAverage': 88,
+        'quizAverage': 76,
+        'overallScore': 82,
+        'assignments': [
+          {
+            'category': 'ASSIGNMENT',
+            'referenceId': 7001,
+            'title': '1주차 요약 과제',
+            'earnedScore': 92,
+            'maxScore': 100,
+            'percentScore': 92,
+            'status': '채점 완료',
+            'feedback': '핵심 개념 정리가 명확합니다.',
+            'submittedAt': '2026-04-14T21:00:00+09:00',
+            'dueAt': '2026-04-15T23:59:59+09:00',
+          },
+          {
+            'category': 'ASSIGNMENT',
+            'referenceId': 7002,
+            'title': '2주차 개념 비교',
+            'earnedScore': 0,
+            'maxScore': 100,
+            'percentScore': 0,
+            'status': '채점 대기',
+            'feedback': null,
+            'submittedAt': '2026-04-20T22:00:00+09:00',
+            'dueAt': '2026-04-22T23:59:59+09:00',
+          },
+        ],
+        'quizzes': [
+          {
+            'category': 'QUIZ',
+            'referenceId': 6001,
+            'title': '1주차 퀴즈',
+            'earnedScore': 16,
+            'maxScore': 20,
+            'percentScore': 80,
+            'status': '채점 완료',
+            'feedback': null,
+            'submittedAt': '2026-04-16T20:10:00+09:00',
+            'dueAt': '2026-04-16T23:59:59+09:00',
+          },
+        ],
+      },
     );
   }
 
@@ -582,6 +763,7 @@ class MockApiClient implements ApiClient {
           'title': '1주차 요약 과제',
           'type': 'SUBJECTIVE',
           'dueAt': '2026-04-15T23:59:59+09:00',
+          'maxScore': 100,
           'isSubmitted': false,
         },
         {
@@ -589,6 +771,7 @@ class MockApiClient implements ApiClient {
           'title': '2주차 개념 비교',
           'type': 'SUBJECTIVE',
           'dueAt': '2026-04-22T23:59:59+09:00',
+          'maxScore': 100,
           'isSubmitted': true,
         },
       ],
@@ -602,6 +785,7 @@ class MockApiClient implements ApiClient {
     required String description,
     required String type,
     required String dueAt,
+    required int maxScore,
     required bool teamAssignment,
   }) async {
     final unauthorized = _unauthorized<Map<String, dynamic>>();
@@ -616,6 +800,7 @@ class MockApiClient implements ApiClient {
         'title': title,
         'type': type,
         'dueAt': dueAt,
+        'maxScore': maxScore,
         'teamAssignment': teamAssignment,
       },
     );
@@ -702,7 +887,73 @@ class MockApiClient implements ApiClient {
         'description': '강의 내용을 300자 이상 요약하세요.',
         'type': 'SUBJECTIVE',
         'dueAt': '2026-04-15T23:59:59+09:00',
-        'mySubmission': {'submissionId': null, 'status': 'NOT_SUBMITTED'},
+        'maxScore': 100,
+        'mySubmission': {
+          'submissionId': 8001,
+          'status': 'SUBMITTED',
+          'submittedAt': '2026-04-14T21:00:00+09:00',
+          'score': 92,
+          'feedback': '핵심 개념 정리가 좋습니다.',
+          'gradedAt': '2026-04-16T15:00:00+09:00',
+        },
+      },
+    );
+  }
+
+  @override
+  Future<ApiResponse<List<Map<String, dynamic>>>> getAssignmentSubmissions(
+      int assignmentId) async {
+    final unauthorized = _unauthorized<List<Map<String, dynamic>>>();
+    if (unauthorized != null) return unauthorized;
+    await Future<void>.delayed(const Duration(milliseconds: 180));
+    return const ApiResponse(
+      success: true,
+      message: '과제 제출 목록 조회 성공',
+      data: [
+        {
+          'submissionId': 8001,
+          'studentId': 1,
+          'studentName': '홍길동',
+          'status': 'SUBMITTED',
+          'submittedAt': '2026-04-14T21:00:00+09:00',
+          'score': 92,
+          'feedback': '핵심 개념 정리가 좋습니다.',
+          'gradedAt': '2026-04-16T15:00:00+09:00',
+        },
+        {
+          'submissionId': 8002,
+          'studentId': 2,
+          'studentName': '김학생',
+          'status': 'LATE',
+          'submittedAt': '2026-04-16T01:00:00+09:00',
+          'score': null,
+          'feedback': null,
+          'gradedAt': null,
+        },
+      ],
+    );
+  }
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> gradeAssignmentSubmission({
+    required int assignmentId,
+    required int submissionId,
+    required int score,
+    required String feedback,
+  }) async {
+    final unauthorized = _unauthorized<Map<String, dynamic>>();
+    if (unauthorized != null) return unauthorized;
+    await Future<void>.delayed(const Duration(milliseconds: 180));
+    return ApiResponse(
+      success: true,
+      message: '과제 채점 완료',
+      data: {
+        'submissionId': submissionId,
+        'submittedAt': '2026-04-14T21:00:00+09:00',
+        'status': 'SUBMITTED',
+        'score': score,
+        'feedback': feedback,
+        'gradedAt': DateTime.now().toIso8601String(),
       },
     );
   }

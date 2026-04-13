@@ -1139,22 +1139,436 @@ class _StudentMyCoursesPageState extends State<StudentMyCoursesPage> {
             ),
             const SizedBox(height: 16),
             if (selectedCourseId != null)
-              _StudentCourseOverview(
+              _StudentCourseHomePanel(
                 controller: widget.controller,
                 courseId: selectedCourseId!,
                 selectedWeekId: selectedWeekId,
                 onWeekSelected: (weekId) =>
                     setState(() => selectedWeekId = weekId),
-                heroTitle: '강의 구성',
-                heroSubtitle: '강의 개요와 주차별 콘텐츠를 확인할 수 있습니다.',
               ),
             const SizedBox(height: 10),
             const EndpointChip(label: 'GET ${Endpoints.coursesMy}'),
             EndpointChip(label: 'GET ${Endpoints.courseDetail(101)}'),
+            EndpointChip(label: 'GET ${Endpoints.courseHome(101)}'),
+            EndpointChip(label: 'GET ${Endpoints.courseGradebook(101)}'),
             EndpointChip(label: 'GET ${Endpoints.weekContents(101, 1001)}'),
           ],
         );
       },
+    );
+  }
+}
+
+class _StudentCourseHomePanel extends StatefulWidget {
+  const _StudentCourseHomePanel({
+    required this.controller,
+    required this.courseId,
+    required this.selectedWeekId,
+    required this.onWeekSelected,
+  });
+
+  final AppController controller;
+  final int courseId;
+  final int? selectedWeekId;
+  final void Function(int weekId) onWeekSelected;
+
+  @override
+  State<_StudentCourseHomePanel> createState() =>
+      _StudentCourseHomePanelState();
+}
+
+class _StudentCourseHomePanelState extends State<_StudentCourseHomePanel> {
+  String selectedTab = 'overview';
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<ApiResponse<Map<String, dynamic>>>(
+      future: widget.controller.api.getCourseHome(widget.courseId),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final home = snapshot.data!.data ?? {};
+        final announcements =
+            ((home['announcements'] as List<dynamic>?) ?? const [])
+                .whereType<Map<String, dynamic>>()
+                .toList();
+        final todos = ((home['todos'] as List<dynamic>?) ?? const [])
+            .whereType<Map<String, dynamic>>()
+            .toList();
+        return Column(
+          children: [
+            DashboardHeroCard(
+              title: _displayText(home['title'], emptyMessage: '강의 홈'),
+              subtitle: '공지, 학습 구성, 할 일, 성적을 한 번에 확인할 수 있습니다.',
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                _CourseHomeTabButton(
+                  label: '개요',
+                  selected: selectedTab == 'overview',
+                  onTap: () => setState(() => selectedTab = 'overview'),
+                ),
+                _CourseHomeTabButton(
+                  label: '공지',
+                  selected: selectedTab == 'announcements',
+                  onTap: () => setState(() => selectedTab = 'announcements'),
+                ),
+                _CourseHomeTabButton(
+                  label: '할 일',
+                  selected: selectedTab == 'todo',
+                  onTap: () => setState(() => selectedTab = 'todo'),
+                ),
+                _CourseHomeTabButton(
+                  label: '성적',
+                  selected: selectedTab == 'grades',
+                  onTap: () => setState(() => selectedTab = 'grades'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (selectedTab == 'overview') ...[
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  MetricCard(
+                    label: '진행률',
+                    value: '${_asInt(home['progressRate'])}%',
+                  ),
+                  MetricCard(
+                    label: '출석',
+                    value: '${_asInt(home['attendanceRate'])}%',
+                  ),
+                  MetricCard(
+                    label: '남은 할 일',
+                    value: '${_asInt(home['pendingTaskCount'])}개',
+                    tone: _statusToneFor('상태', '관찰 필요'),
+                  ),
+                  MetricCard(
+                    label: '최근 학습',
+                    value: _displayText(
+                      home['recentLearningTitle'],
+                      emptyMessage: '아직 없음',
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              SectionPanel(
+                title: '최근 공지',
+                child: announcements.isEmpty
+                    ? const EmptyStateCard(
+                        title: '등록된 공지가 없습니다',
+                        description: '교수자가 공지를 올리면 여기에서 바로 확인할 수 있습니다.',
+                      )
+                    : Column(
+                        children: announcements
+                            .take(3)
+                            .map(
+                              (announcement) => InfoCard(
+                                title:
+                                    '${announcement['pinned'] == true ? '[중요] ' : ''}${_displayText(announcement['title'])}',
+                                content:
+                                    '${_displayText(announcement['body'])}\n작성 ${_displayText(announcement['createdAt'])}',
+                              ),
+                            )
+                            .toList(),
+                      ),
+              ),
+              const SizedBox(height: 16),
+              SectionPanel(
+                title: '다가오는 일정과 할 일',
+                child: todos.isEmpty
+                    ? const EmptyStateCard(
+                        title: '예정된 일정이 없습니다',
+                        description: '과제, 퀴즈, 콘텐츠 오픈 일정이 생기면 여기에 표시됩니다.',
+                      )
+                    : Column(
+                        children: todos
+                            .map(
+                              (todo) => Container(
+                                margin: const EdgeInsets.only(bottom: 10),
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                      color: const Color(0xFFDCE8E4)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            _displayText(todo['title']),
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w800,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            '${_displayText(todo['summary'])} · ${_displayText(todo['scheduleAt'])}',
+                                            style: const TextStyle(
+                                              color: Color(0xFF64757B),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    _StatusChip(
+                                      label: '상태',
+                                      value: _displayText(todo['status']),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      ),
+              ),
+              const SizedBox(height: 16),
+              _StudentCourseOverview(
+                controller: widget.controller,
+                courseId: widget.courseId,
+                selectedWeekId: widget.selectedWeekId,
+                onWeekSelected: widget.onWeekSelected,
+                heroTitle: '학습 구성',
+                heroSubtitle: '강의 개요와 주차별 콘텐츠를 확인할 수 있습니다.',
+              ),
+            ],
+            if (selectedTab == 'announcements')
+              SectionPanel(
+                title: '강의 공지',
+                child: announcements.isEmpty
+                    ? const EmptyStateCard(
+                        title: '등록된 공지가 없습니다',
+                        description: '새 공지가 올라오면 이곳에서 시간순으로 확인할 수 있습니다.',
+                      )
+                    : Column(
+                        children: announcements
+                            .map(
+                              (announcement) => InfoCard(
+                                title:
+                                    '${announcement['pinned'] == true ? '[중요] ' : ''}${_displayText(announcement['title'])}',
+                                content:
+                                    '${_displayText(announcement['body'])}\n작성 ${_displayText(announcement['createdByName'])} · ${_displayText(announcement['createdAt'])}',
+                              ),
+                            )
+                            .toList(),
+                      ),
+              ),
+            if (selectedTab == 'todo')
+              SectionPanel(
+                title: '일정과 할 일',
+                child: todos.isEmpty
+                    ? const EmptyStateCard(
+                        title: '예정된 일정이 없습니다',
+                        description: '과제, 퀴즈, 콘텐츠 일정이 여기에 정리됩니다.',
+                      )
+                    : Column(
+                        children: todos
+                            .map(
+                              (todo) => InfoCard(
+                                title:
+                                    '${_displayText(todo['title'])} · ${_displayText(todo['status'])}',
+                                content:
+                                    '${_displayText(todo['summary'])}\n일정 ${_displayText(todo['scheduleAt'])}',
+                              ),
+                            )
+                            .toList(),
+                      ),
+              ),
+            if (selectedTab == 'grades')
+              FutureBuilder<ApiResponse<Map<String, dynamic>>>(
+                future:
+                    widget.controller.api.getMyCourseGradebook(widget.courseId),
+                builder: (context, gradeSnapshot) {
+                  if (!gradeSnapshot.hasData) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  final gradebook = gradeSnapshot.data!.data ?? {};
+                  final assignments =
+                      ((gradebook['assignments'] as List<dynamic>?) ?? const [])
+                          .whereType<Map<String, dynamic>>()
+                          .toList();
+                  final quizzes =
+                      ((gradebook['quizzes'] as List<dynamic>?) ?? const [])
+                          .whereType<Map<String, dynamic>>()
+                          .toList();
+                  return Column(
+                    children: [
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        children: [
+                          MetricCard(
+                            label: '종합 점수',
+                            value: '${_asInt(gradebook['overallScore'])}',
+                          ),
+                          MetricCard(
+                            label: '과제 평균',
+                            value: '${_asInt(gradebook['assignmentAverage'])}%',
+                          ),
+                          MetricCard(
+                            label: '퀴즈 평균',
+                            value: '${_asInt(gradebook['quizAverage'])}%',
+                          ),
+                          MetricCard(
+                            label: '출석 반영',
+                            value: '${_asInt(gradebook['attendanceRate'])}%',
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      SectionPanel(
+                        title: '과제 성적',
+                        child: assignments.isEmpty
+                            ? const EmptyStateCard(
+                                title: '과제 성적이 없습니다',
+                                description: '과제가 생성되고 채점되면 이곳에 표시됩니다.',
+                              )
+                            : Column(
+                                children: assignments
+                                    .map((item) => _GradeItemCard(item: item))
+                                    .toList(),
+                              ),
+                      ),
+                      const SizedBox(height: 16),
+                      SectionPanel(
+                        title: '퀴즈 성적',
+                        child: quizzes.isEmpty
+                            ? const EmptyStateCard(
+                                title: '퀴즈 성적이 없습니다',
+                                description: '퀴즈 응시 후 결과가 여기에 표시됩니다.',
+                              )
+                            : Column(
+                                children: quizzes
+                                    .map((item) => _GradeItemCard(item: item))
+                                    .toList(),
+                              ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _CourseHomeTabButton extends StatelessWidget {
+  const _CourseHomeTabButton({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFF0E7A66) : Colors.white,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: selected ? const Color(0xFF0E7A66) : const Color(0xFFD7E7E2),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? Colors.white : const Color(0xFF33535B),
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GradeItemCard extends StatelessWidget {
+  const _GradeItemCard({required this.item});
+
+  final Map<String, dynamic> item;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFDCE8E4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _displayText(item['title']),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              _StatusChip(
+                label: '상태',
+                value: _displayText(item['status']),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _StatusChip(
+                label: '점수',
+                value:
+                    '${_asInt(item['earnedScore'])}/${_asInt(item['maxScore'])}',
+              ),
+              _StatusChip(
+                label: '환산',
+                value: '${_asInt(item['percentScore'])}%',
+              ),
+              _StatusChip(
+                label: '마감',
+                value: _displayText(item['dueAt']),
+              ),
+            ],
+          ),
+          if (_displayText(item['feedback'], emptyMessage: '').isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text(
+              '피드백 · ${_displayText(item['feedback'])}',
+              style: const TextStyle(
+                color: Color(0xFF51656B),
+                height: 1.5,
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -1958,8 +2372,26 @@ class _StudentAssignmentPageState extends State<StudentAssignmentPage> {
                               label: '마감',
                               value: _displayText(assignment['dueAt']),
                             ),
+                            _StatusChip(
+                              label: '배점',
+                              value: '${_asInt(assignment['maxScore'])}점',
+                            ),
                           ],
                         ),
+                        const SizedBox(height: 12),
+                        if ((assignment['mySubmission']
+                                    as Map<String, dynamic>?) !=
+                                null &&
+                            _displayText(
+                              (assignment['mySubmission']
+                                  as Map<String, dynamic>)['status'],
+                              emptyMessage: '',
+                            ).isNotEmpty)
+                          InfoCard(
+                            title: '내 제출 상태',
+                            content:
+                                '상태 ${_displayText((assignment['mySubmission'] as Map<String, dynamic>)['status'])} · 제출 ${_displayText((assignment['mySubmission'] as Map<String, dynamic>)['submittedAt'], emptyMessage: '아직 없음')}\n점수 ${_displayText((assignment['mySubmission'] as Map<String, dynamic>)['score'], emptyMessage: '채점 전')} · 피드백 ${_displayText((assignment['mySubmission'] as Map<String, dynamic>)['feedback'], emptyMessage: '아직 없음')}',
+                          ),
                         const SizedBox(height: 12),
                         TextField(
                           controller: answerController,
@@ -2612,15 +3044,26 @@ class _InstructorCourseManagementPageState
   final TextEditingController assignmentDueAtController = TextEditingController(
     text: '2026-05-20T23:59:59Z',
   );
+  final TextEditingController assignmentMaxScoreController =
+      TextEditingController(text: '100');
+  final TextEditingController announcementTitleController =
+      TextEditingController();
+  final TextEditingController announcementBodyController =
+      TextEditingController();
+  final TextEditingController gradeScoreController = TextEditingController();
+  final TextEditingController gradeFeedbackController = TextEditingController();
 
   int refreshSeed = 0;
   int? selectedCourseId;
   int? selectedWeekId;
+  int? selectedAssignmentId;
+  int? selectedSubmissionId;
   String selectedContentType = 'VOD';
   String selectedAssignmentType = 'SUBJECTIVE';
   bool isSequentialRelease = false;
   bool isPublicCourse = true;
   bool isTeamAssignment = false;
+  bool pinAnnouncement = true;
   bool uploadingVideo = false;
   bool uploadingThumbnail = false;
   bool uploadingDocument = false;
@@ -2645,6 +3088,11 @@ class _InstructorCourseManagementPageState
     assignmentTitleController.dispose();
     assignmentDescriptionController.dispose();
     assignmentDueAtController.dispose();
+    assignmentMaxScoreController.dispose();
+    announcementTitleController.dispose();
+    announcementBodyController.dispose();
+    gradeScoreController.dispose();
+    gradeFeedbackController.dispose();
     super.dispose();
   }
 
@@ -2908,6 +3356,8 @@ class _InstructorCourseManagementPageState
             if (selectedWeekId != null)
               _buildContentManager(courseId, selectedWeekId!),
             const SizedBox(height: 16),
+            _buildAnnouncementManager(courseId),
+            const SizedBox(height: 16),
             _buildAssignmentManager(courseId),
           ],
         );
@@ -3062,6 +3512,66 @@ class _InstructorCourseManagementPageState
     );
   }
 
+  Widget _buildAnnouncementManager(int courseId) {
+    return FutureBuilder<ApiResponse<List<Map<String, dynamic>>>>(
+      future: widget.controller.api.getCourseAnnouncements(courseId),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final announcements = snapshot.data!.data ?? [];
+        return SectionPanel(
+          title: '공지 관리',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _AuthTextField(
+                controller: announcementTitleController,
+                label: '공지 제목',
+                hintText: '예: 3주차 프로젝트 안내',
+              ),
+              const SizedBox(height: 12),
+              _AuthTextField(
+                controller: announcementBodyController,
+                label: '공지 내용',
+                hintText: '학생에게 전달할 공지를 입력하세요',
+              ),
+              SwitchListTile(
+                value: pinAnnouncement,
+                contentPadding: EdgeInsets.zero,
+                title: const Text('중요 공지로 상단 고정'),
+                subtitle: const Text('강의 홈에서 먼저 보이도록 표시합니다.'),
+                onChanged: (value) => setState(() => pinAnnouncement = value),
+              ),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: FilledButton(
+                  onPressed: () => _createAnnouncement(courseId),
+                  child: const Text('공지 등록'),
+                ),
+              ),
+              const SizedBox(height: 18),
+              if (announcements.isEmpty)
+                const EmptyStateCard(
+                  title: '등록된 공지가 없습니다',
+                  description: '강의 운영 공지를 올리면 학생 강의 홈에서 바로 볼 수 있습니다.',
+                )
+              else
+                ...announcements.map(
+                  (announcement) => InfoCard(
+                    title:
+                        '${announcement['pinned'] == true ? '[중요] ' : ''}${_displayText(announcement['title'])}',
+                    content:
+                        '${_displayText(announcement['body'])}\n작성 ${_displayText(announcement['createdAt'])}',
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildAssignmentManager(int courseId) {
     return FutureBuilder<ApiResponse<List<Map<String, dynamic>>>>(
       future: widget.controller.api.getCourseAssignments(courseId),
@@ -3118,6 +3628,12 @@ class _InstructorCourseManagementPageState
                 hintText: '2026-05-20T23:59:59Z',
               ),
               const SizedBox(height: 12),
+              _AuthTextField(
+                controller: assignmentMaxScoreController,
+                label: '배점',
+                hintText: '100',
+              ),
+              const SizedBox(height: 12),
               Align(
                 alignment: Alignment.centerLeft,
                 child: FilledButton(
@@ -3132,13 +3648,124 @@ class _InstructorCourseManagementPageState
                   description: '과제를 만들면 학생들이 강의별로 확인할 수 있습니다.',
                 )
               else
-                ...assignments.map(
-                  (assignment) => InfoCard(
-                    title: _displayText(assignment['title']),
-                    content:
-                        '마감 ${_displayText(assignment['dueAt'])} · ${assignment['teamAssignment'] == true ? '팀 과제' : '개인 과제'} · ${_displayText(assignment['type'])}',
-                  ),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: assignments
+                      .map(
+                        (assignment) => SizedBox(
+                          width: 280,
+                          child: _SelectionCard(
+                            title: _displayText(assignment['title']),
+                            description:
+                                '마감 ${_displayText(assignment['dueAt'])}\n배점 ${_asInt(assignment['maxScore'])}점 · ${assignment['teamAssignment'] == true ? '팀 과제' : '개인 과제'}',
+                            selected: _asInt(assignment['assignmentId']) ==
+                                selectedAssignmentId,
+                            onTap: () {
+                              setState(() {
+                                selectedAssignmentId =
+                                    _asInt(assignment['assignmentId']);
+                                selectedSubmissionId = null;
+                                gradeScoreController.clear();
+                                gradeFeedbackController.clear();
+                              });
+                            },
+                          ),
+                        ),
+                      )
+                      .toList(),
                 ),
+              if (selectedAssignmentId != null) ...[
+                const SizedBox(height: 18),
+                FutureBuilder<ApiResponse<List<Map<String, dynamic>>>>(
+                  future: widget.controller.api
+                      .getAssignmentSubmissions(selectedAssignmentId!),
+                  builder: (context, submissionSnapshot) {
+                    if (!submissionSnapshot.hasData) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    final submissions = submissionSnapshot.data!.data ?? [];
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          '제출 및 채점',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        if (submissions.isEmpty)
+                          const EmptyStateCard(
+                            title: '제출물이 없습니다',
+                            description: '학생이 과제를 제출하면 여기에서 채점할 수 있습니다.',
+                          )
+                        else
+                          Wrap(
+                            spacing: 12,
+                            runSpacing: 12,
+                            children: submissions
+                                .map(
+                                  (submission) => SizedBox(
+                                    width: 280,
+                                    child: _SelectionCard(
+                                      title:
+                                          '${_displayText(submission['studentName'])} · ${_displayText(submission['status'])}',
+                                      description:
+                                          '제출 ${_displayText(submission['submittedAt'])}\n점수 ${_displayText(submission['score'], emptyMessage: '미채점')}',
+                                      selected:
+                                          _asInt(submission['submissionId']) ==
+                                              selectedSubmissionId,
+                                      onTap: () {
+                                        setState(() {
+                                          selectedSubmissionId = _asInt(
+                                              submission['submissionId']);
+                                          gradeScoreController.text =
+                                              _displayText(
+                                            submission['score'],
+                                            emptyMessage: '',
+                                          );
+                                          gradeFeedbackController.text =
+                                              _displayText(
+                                            submission['feedback'],
+                                            emptyMessage: '',
+                                          );
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                          ),
+                        if (selectedSubmissionId != null) ...[
+                          const SizedBox(height: 16),
+                          _AuthTextField(
+                            controller: gradeScoreController,
+                            label: '점수',
+                            hintText: '예: 92',
+                            keyboardType: TextInputType.number,
+                          ),
+                          const SizedBox(height: 12),
+                          _AuthTextField(
+                            controller: gradeFeedbackController,
+                            label: '피드백',
+                            hintText: '학생에게 전달할 피드백을 입력하세요',
+                          ),
+                          const SizedBox(height: 12),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: FilledButton.tonal(
+                              onPressed: () => _gradeAssignmentSubmission(),
+                              child: const Text('채점 저장'),
+                            ),
+                          ),
+                        ],
+                      ],
+                    );
+                  },
+                ),
+              ],
             ],
           ),
         );
@@ -3216,6 +3843,7 @@ class _InstructorCourseManagementPageState
       description: assignmentDescriptionController.text.trim(),
       type: selectedAssignmentType,
       dueAt: assignmentDueAtController.text.trim(),
+      maxScore: int.tryParse(assignmentMaxScoreController.text.trim()) ?? 100,
       teamAssignment: isTeamAssignment,
     );
     _notify(response.message);
@@ -3225,8 +3853,44 @@ class _InstructorCourseManagementPageState
       assignmentTitleController.clear();
       assignmentDescriptionController.clear();
       assignmentDueAtController.text = '2026-05-20T23:59:59Z';
+      assignmentMaxScoreController.text = '100';
       isTeamAssignment = false;
       selectedAssignmentType = 'SUBJECTIVE';
+    });
+  }
+
+  Future<void> _createAnnouncement(int courseId) async {
+    final response = await widget.controller.api.createCourseAnnouncement(
+      courseId: courseId,
+      title: announcementTitleController.text.trim(),
+      body: announcementBodyController.text.trim(),
+      pinned: pinAnnouncement,
+    );
+    _notify(response.message);
+    if (!response.success) return;
+    setState(() {
+      refreshSeed++;
+      announcementTitleController.clear();
+      announcementBodyController.clear();
+      pinAnnouncement = true;
+    });
+  }
+
+  Future<void> _gradeAssignmentSubmission() async {
+    if (selectedAssignmentId == null || selectedSubmissionId == null) {
+      _notify('채점할 제출물을 먼저 선택해주세요.');
+      return;
+    }
+    final response = await widget.controller.api.gradeAssignmentSubmission(
+      assignmentId: selectedAssignmentId!,
+      submissionId: selectedSubmissionId!,
+      score: int.tryParse(gradeScoreController.text.trim()) ?? 0,
+      feedback: gradeFeedbackController.text.trim(),
+    );
+    _notify(response.message);
+    if (!response.success) return;
+    setState(() {
+      refreshSeed++;
     });
   }
 

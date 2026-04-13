@@ -58,13 +58,18 @@ class Endpoints {
   static const String teamsMe = '$baseUrl/teams/me';
 
   static String courseDetail(int courseId) => '$baseUrl/courses/$courseId';
+  static String courseHome(int courseId) => '$baseUrl/courses/$courseId/home';
   static String courseWeeks(int courseId) => '$baseUrl/courses/$courseId/weeks';
   static String courseStudents(int courseId) =>
       '$baseUrl/courses/$courseId/students';
+  static String courseAnnouncements(int courseId) =>
+      '$baseUrl/courses/$courseId/announcements';
   static String courseStudentMemo(int courseId, int studentId) =>
       '$baseUrl/courses/$courseId/students/$studentId/memo';
   static String courseLearningLogs(int courseId) =>
       '$baseUrl/courses/$courseId/learning-logs/me';
+  static String courseGradebook(int courseId) =>
+      '$baseUrl/courses/$courseId/gradebook/me';
   static String weekContents(int courseId, int weekId) =>
       '$baseUrl/courses/$courseId/weeks/$weekId/contents';
   static String createContent(int weekId) => '$baseUrl/weeks/$weekId/contents';
@@ -83,6 +88,10 @@ class Endpoints {
       '$baseUrl/assignments/$assignmentId';
   static String assignmentSubmit(int assignmentId) =>
       '$baseUrl/assignments/$assignmentId/submissions';
+  static String assignmentSubmissions(int assignmentId) =>
+      '$baseUrl/assignments/$assignmentId/submissions';
+  static String assignmentSubmissionGrade(int assignmentId, int submissionId) =>
+      '$baseUrl/assignments/$assignmentId/submissions/$submissionId/grade';
   static String studentRecommendations(int studentId) =>
       '$baseUrl/students/$studentId/recommendations';
   static String teamDetail(int teamId) => '$baseUrl/teams/$teamId';

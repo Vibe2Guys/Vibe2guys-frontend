@@ -180,9 +180,36 @@ class HttpApiClient implements ApiClient {
       _getMap('/courses/$courseId');
 
   @override
+  Future<ApiResponse<Map<String, dynamic>>> getCourseHome(int courseId) =>
+      _getMap('/courses/$courseId/home');
+
+  @override
+  Future<ApiResponse<List<Map<String, dynamic>>>> getCourseAnnouncements(
+          int courseId) =>
+      _getList('/courses/$courseId/announcements');
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> createCourseAnnouncement({
+    required int courseId,
+    required String title,
+    required String body,
+    required bool pinned,
+  }) {
+    return _postMap(
+      '/courses/$courseId/announcements',
+      body: {'title': title, 'body': body, 'pinned': pinned},
+    );
+  }
+
+  @override
   Future<ApiResponse<List<Map<String, dynamic>>>> getMyLearningLogs(
           int courseId) =>
       _getList('/courses/$courseId/learning-logs/me');
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> getMyCourseGradebook(
+          int courseId) =>
+      _getMap('/courses/$courseId/gradebook/me');
 
   @override
   Future<ApiResponse<List<Map<String, dynamic>>>> getCourseStudents(
@@ -322,6 +349,7 @@ class HttpApiClient implements ApiClient {
     required String description,
     required String type,
     required String dueAt,
+    required int maxScore,
     required bool teamAssignment,
   }) {
     return _postMap(
@@ -331,6 +359,7 @@ class HttpApiClient implements ApiClient {
         'description': description,
         'type': type,
         'dueAt': dueAt,
+        'maxScore': maxScore,
         'teamAssignment': teamAssignment,
       },
     );
@@ -368,6 +397,24 @@ class HttpApiClient implements ApiClient {
   Future<ApiResponse<Map<String, dynamic>>> getAssignmentDetail(
           int assignmentId) =>
       _getMap('/assignments/$assignmentId');
+
+  @override
+  Future<ApiResponse<List<Map<String, dynamic>>>> getAssignmentSubmissions(
+          int assignmentId) =>
+      _getList('/assignments/$assignmentId/submissions');
+
+  @override
+  Future<ApiResponse<Map<String, dynamic>>> gradeAssignmentSubmission({
+    required int assignmentId,
+    required int submissionId,
+    required int score,
+    required String feedback,
+  }) {
+    return _patchMap(
+      '/assignments/$assignmentId/submissions/$submissionId/grade',
+      body: {'score': score, 'feedback': feedback},
+    );
+  }
 
   @override
   Future<ApiResponse<Map<String, dynamic>>> submitAssignment({
@@ -746,6 +793,7 @@ class HttpApiClient implements ApiClient {
           description: (body['description'] as String?) ?? '',
           type: (body['type'] as String?) ?? 'SUBJECTIVE',
           dueAt: (body['dueAt'] as String?) ?? '',
+          maxScore: (body['maxScore'] as num?)?.toInt() ?? 100,
           teamAssignment: body['teamAssignment'] == true,
         );
       }
