@@ -13,9 +13,9 @@ const bool kShowDeveloperApi = bool.fromEnvironment(
 );
 
 class AppTheme {
-  static const Color primary = Color(0xFF0F766E);
-  static const Color primaryContainer = Color(0xFFDDF4EF);
-  static const Color secondary = Color(0xFF334155);
+  static const Color primary = Color(0xFF2563EB);
+  static const Color primaryContainer = Color(0xFFE0EAFE);
+  static const Color secondary = Color(0xFF1E293B);
   static const Color tertiary = Color(0xFF64748B);
   static const Color surface = Color(0xFFF8FAFC);
   static const Color surfaceContainer = Color(0xFFFFFFFF);
@@ -205,7 +205,7 @@ class AppTheme {
     return const BoxDecoration(
       borderRadius: radiusLarge,
       gradient: LinearGradient(
-        colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+        colors: [Color(0xFF0F172A), Color(0xFF1D4ED8)],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       ),
@@ -945,153 +945,343 @@ class AppShell extends StatelessWidget {
           ];
     final currentIndex =
         controller.selectedIndex >= items.length ? 0 : controller.selectedIndex;
+    final profileImage =
+        _profileImageProvider(controller.user?.profileImageUrl);
     return Scaffold(
-      body: Row(
-        children: [
-          Container(
-            width: 144,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.92),
-              border: Border(
-                right: BorderSide(
-                  color: AppTheme.border,
-                ),
-              ),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x0F0F172A),
-                  blurRadius: 18,
-                  offset: Offset(4, 0),
-                ),
-              ],
-            ),
-            child: NavigationRail(
-              selectedIndex: currentIndex,
-              minWidth: 100,
-              groupAlignment: -0.85,
-              backgroundColor: Colors.transparent,
-              indicatorColor: colorScheme.primaryContainer,
-              selectedIconTheme: IconThemeData(
-                color: colorScheme.primary,
-                size: 22,
-              ),
-              unselectedIconTheme: const IconThemeData(
-                color: AppTheme.textMuted,
-                size: 21,
-              ),
-              selectedLabelTextStyle: TextStyle(
-                color: colorScheme.primary,
-                fontWeight: FontWeight.w800,
-                fontSize: 13,
-              ),
-              unselectedLabelTextStyle: const TextStyle(
-                color: AppTheme.textMuted,
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
-              ),
-              labelType: NavigationRailLabelType.all,
-              onDestinationSelected: controller.setSelectedIndex,
-              leading: Padding(
-                padding: const EdgeInsets.fromLTRB(10, 12, 10, 18),
-                child: InkWell(
-                  onTap: controller.openMyPage,
-                  borderRadius: BorderRadius.circular(22),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: controller.showingMyPage
-                          ? colorScheme.primaryContainer
-                          : Colors.white.withValues(alpha: 0.86),
-                      borderRadius: BorderRadius.circular(22),
-                      border: Border.all(
-                        color: controller.showingMyPage
-                            ? colorScheme.primary
-                            : AppTheme.border,
-                      ),
-                    ),
-                    child: Column(
+      backgroundColor: AppTheme.surface,
+      body: Container(
+        decoration: AppTheme.shellDecoration(),
+        child: Row(
+          children: [
+            Container(
+              width: 264,
+              margin: const EdgeInsets.fromLTRB(16, 16, 0, 16),
+              decoration: AppTheme.panelDecoration(
+                background: Colors.white.withValues(alpha: 0.96),
+                elevated: true,
+              ).copyWith(borderRadius: AppTheme.radiusLarge),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
                       children: [
-                        CircleAvatar(
-                          radius: 22,
-                          backgroundColor: Colors.teal.shade700,
-                          backgroundImage: _profileImageProvider(
-                              controller.user?.profileImageUrl),
-                          child: _profileImageProvider(
-                                      controller.user?.profileImageUrl) ==
-                                  null
-                              ? Text(
-                                  controller.user!.name.characters.first,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                )
-                              : null,
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          controller.user!.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                            color: AppTheme.textPrimary,
+                        Container(
+                          height: 44,
+                          width: 44,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF1D4ED8), Color(0xFF0F172A)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.auto_awesome_rounded,
+                            color: Colors.white,
                           ),
                         ),
-                        const SizedBox(height: 3),
-                        const Text(
-                          '내 프로필',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.primary,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'LearnSight',
+                                style: theme.textTheme.titleLarge?.copyWith(
+                                  fontSize: 20,
+                                ),
+                              ),
+                              Text(
+                                role == UserRole.student
+                                    ? 'Student Workspace'
+                                    : 'Instructor Workspace',
+                                style: theme.textTheme.bodySmall,
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
-                  ),
-                ),
-              ),
-              trailing: Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.92),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppTheme.border),
-                ),
-                child: IconButton(
-                  onPressed: () => controller.logout(),
-                  icon: const Icon(Icons.logout_rounded),
-                  tooltip: '로그아웃',
-                ),
-              ),
-              destinations: items
-                  .map(
-                    (item) => NavigationRailDestination(
-                      icon: Icon(item.icon),
-                      selectedIcon: Icon(item.icon),
-                      label: Text(item.label, textAlign: TextAlign.center),
+                    const SizedBox(height: 18),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: AppTheme.surfaceAlt,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: AppTheme.border),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.search_rounded,
+                            size: 18,
+                            color: AppTheme.textMuted,
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            '메뉴 찾기',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: AppTheme.textMuted,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  )
-                  .toList(),
-            ),
-          ),
-          const VerticalDivider(width: 1),
-          Expanded(
-            child: Container(
-              decoration: AppTheme.shellDecoration(),
-              child: Padding(
-                padding: AppTheme.pagePadding,
-                child: _buildBody(role, currentIndex),
+                    const SizedBox(height: 18),
+                    Expanded(
+                      child: ListView.separated(
+                        itemCount: items.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 6),
+                        itemBuilder: (context, index) {
+                          final item = items[index];
+                          final selected = !controller.showingMyPage &&
+                              currentIndex == index;
+                          return _SidebarNavButton(
+                            item: item,
+                            selected: selected,
+                            onTap: () => controller.setSelectedIndex(index),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    InkWell(
+                      onTap: controller.openMyPage,
+                      borderRadius: BorderRadius.circular(24),
+                      child: Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: controller.showingMyPage
+                              ? colorScheme.primaryContainer
+                              : AppTheme.surfaceAlt,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: controller.showingMyPage
+                                ? colorScheme.primary
+                                : AppTheme.border,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 22,
+                              backgroundColor: colorScheme.primary,
+                              backgroundImage: profileImage,
+                              child: profileImage == null
+                                  ? Text(
+                                      controller.user!.name.characters.first,
+                                      style: theme.textTheme.titleMedium
+                                          ?.copyWith(color: Colors.white),
+                                    )
+                                  : null,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    controller.user!.name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.titleMedium,
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '내 프로필 열기',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: colorScheme.primary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: controller.logout,
+                        icon: const Icon(Icons.logout_rounded, size: 18),
+                        label: const Text('로그아웃'),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                child: Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 16,
+                      ),
+                      decoration: AppTheme.panelDecoration(
+                        background: Colors.white.withValues(alpha: 0.92),
+                        elevated: true,
+                      ).copyWith(borderRadius: AppTheme.radiusLarge),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _pageTitle(role, currentIndex),
+                                  style: theme.textTheme.headlineSmall
+                                      ?.copyWith(fontSize: 24),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  _pageSubtitle(role, currentIndex),
+                                  style: theme.textTheme.bodyMedium,
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppTheme.surfaceAlt,
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(color: AppTheme.border),
+                            ),
+                            child: const Row(
+                              children: [
+                                Icon(
+                                  Icons.search_rounded,
+                                  size: 18,
+                                  color: AppTheme.textMuted,
+                                ),
+                                SizedBox(width: 10),
+                                Text(
+                                  'Search',
+                                  style: TextStyle(
+                                    color: AppTheme.textMuted,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          _HeaderIconButton(
+                            icon: Icons.notifications_none_rounded,
+                            badgeCount: 3,
+                          ),
+                          const SizedBox(width: 10),
+                          _HeaderIconButton(icon: Icons.tune_rounded),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Expanded(
+                      child: Container(
+                        width: double.infinity,
+                        padding: AppTheme.pagePadding,
+                        decoration: AppTheme.panelDecoration(
+                          background: Colors.white.withValues(alpha: 0.82),
+                          elevated: true,
+                        ).copyWith(borderRadius: AppTheme.radiusLarge),
+                        child: _buildBody(role, currentIndex),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
+  }
+
+  String _pageTitle(UserRole role, int selectedIndex) {
+    if (controller.showingMyPage) {
+      return '내 프로필';
+    }
+    if (role == UserRole.student) {
+      switch (selectedIndex) {
+        case 0:
+          return '학습 대시보드';
+        case 1:
+          return '내 강의';
+        case 2:
+          return '강의 신청';
+        case 3:
+          return '콘텐츠와 진도';
+        case 4:
+          return '과제 관리';
+        case 5:
+          return '팀 활동';
+        default:
+          return '학습 대시보드';
+      }
+    }
+    switch (selectedIndex) {
+      case 0:
+        return '교수자 대시보드';
+      case 1:
+        return '수강생 관리';
+      case 2:
+        return '강의 운영';
+      case 3:
+        return '팀 분석';
+      default:
+        return '교수자 대시보드';
+    }
+  }
+
+  String _pageSubtitle(UserRole role, int selectedIndex) {
+    if (controller.showingMyPage) {
+      return '프로필 정보와 개인 설정을 한 곳에서 관리합니다.';
+    }
+    if (role == UserRole.student) {
+      switch (selectedIndex) {
+        case 0:
+          return '최근 학습 현황과 해야 할 일을 정돈된 흐름으로 확인합니다.';
+        case 1:
+          return '수강 중인 강의와 강의 홈 정보를 탐색합니다.';
+        case 2:
+          return '공개 강의를 둘러보거나 코드로 비공개 강의에 입장합니다.';
+        case 3:
+          return '강의별 콘텐츠와 학습 진행 상황을 확인합니다.';
+        case 4:
+          return '강의별 과제 제출 상태와 피드백을 확인합니다.';
+        case 5:
+          return '팀 설명, 업무, 회의 메모와 대화 흐름을 확인합니다.';
+        default:
+          return '현재 학습 흐름을 한 화면에서 확인합니다.';
+      }
+    }
+    switch (selectedIndex) {
+      case 0:
+        return '운영 중인 강의와 핵심 지표를 빠르게 확인합니다.';
+      case 1:
+        return '수강생 상태를 살피고 메모를 남길 수 있습니다.';
+      case 2:
+        return '강의, 콘텐츠, 공지, 과제 운영을 한 흐름으로 관리합니다.';
+      case 3:
+        return '팀 빌딩과 협업 상태를 시각적으로 점검합니다.';
+      default:
+        return '강의 운영 현황을 정리해서 확인합니다.';
+    }
   }
 
   Widget _buildBody(UserRole role, int selectedIndex) {
@@ -5763,6 +5953,108 @@ class _NavItem {
 
   final String label;
   final IconData icon;
+}
+
+class _SidebarNavButton extends StatelessWidget {
+  const _SidebarNavButton({
+    required this.item,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final _NavItem item;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: selected ? colorScheme.primaryContainer : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected ? colorScheme.primary : Colors.transparent,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              item.icon,
+              size: 20,
+              color: selected ? colorScheme.primary : AppTheme.textMuted,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                item.label,
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color:
+                      selected ? colorScheme.primary : AppTheme.textSecondary,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HeaderIconButton extends StatelessWidget {
+  const _HeaderIconButton({required this.icon, this.badgeCount});
+
+  final IconData icon;
+  final int? badgeCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceAlt,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: AppTheme.border),
+          ),
+          child: IconButton(
+            onPressed: () {},
+            icon: Icon(icon, color: AppTheme.textSecondary, size: 20),
+          ),
+        ),
+        if ((badgeCount ?? 0) > 0)
+          Positioned(
+            top: -4,
+            right: -4,
+            child: Container(
+              height: 20,
+              width: 20,
+              decoration: BoxDecoration(
+                color: colorScheme.primary,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                '${badgeCount!}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
 }
 
 class _StatusTone {
