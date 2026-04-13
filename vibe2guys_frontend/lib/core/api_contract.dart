@@ -1,0 +1,126 @@
+enum UserRole {
+  student('STUDENT', '학습자'),
+  instructor('INSTRUCTOR', '교수자'),
+  admin('ADMIN', '관리자');
+
+  const UserRole(this.apiValue, this.label);
+  final String apiValue;
+  final String label;
+
+  static UserRole fromApi(String value) {
+    return UserRole.values.firstWhere(
+      (role) => role.apiValue == value,
+      orElse: () => UserRole.student,
+    );
+  }
+}
+
+class ApiResponse<T> {
+  const ApiResponse({
+    required this.success,
+    required this.message,
+    this.data,
+    this.errorCode,
+  });
+
+  final bool success;
+  final String message;
+  final T? data;
+  final String? errorCode;
+}
+
+class AppUser {
+  const AppUser({
+    required this.userId,
+    required this.name,
+    required this.email,
+    required this.role,
+    this.profileImageUrl,
+  });
+
+  final int userId;
+  final String name;
+  final String email;
+  final UserRole role;
+  final String? profileImageUrl;
+}
+
+class Endpoints {
+  static const String baseUrl = '/api/v1';
+
+  static const String authRegister = '$baseUrl/auth/register';
+  static const String authLogin = '$baseUrl/auth/login';
+  static const String coursesMy = '$baseUrl/courses/my';
+  static const String courses = '$baseUrl/courses';
+  static const String enrollByCode = '$baseUrl/courses/enroll-by-code';
+  static const String dashboardStudent = '$baseUrl/dashboard/student';
+  static const String reportsMe = '$baseUrl/reports/me';
+  static const String teamsMe = '$baseUrl/teams/me';
+
+  static String courseDetail(int courseId) => '$baseUrl/courses/$courseId';
+  static String courseHome(int courseId) => '$baseUrl/courses/$courseId/home';
+  static String courseWeeks(int courseId) => '$baseUrl/courses/$courseId/weeks';
+  static String courseStudents(int courseId) =>
+      '$baseUrl/courses/$courseId/students';
+  static String courseAnnouncements(int courseId) =>
+      '$baseUrl/courses/$courseId/announcements';
+  static String courseStudentMemo(int courseId, int studentId) =>
+      '$baseUrl/courses/$courseId/students/$studentId/memo';
+  static String courseLearningLogs(int courseId) =>
+      '$baseUrl/courses/$courseId/learning-logs/me';
+  static String courseGradebook(int courseId) =>
+      '$baseUrl/courses/$courseId/gradebook/me';
+  static String weekContents(int courseId, int weekId) =>
+      '$baseUrl/courses/$courseId/weeks/$weekId/contents';
+  static String createContent(int weekId) => '$baseUrl/weeks/$weekId/contents';
+  static const String createUploadUrl = '$baseUrl/uploads/presigned-url';
+  static const String createVideoUploadUrl =
+      '$baseUrl/uploads/videos/presigned-url';
+  static const String usersMe = '$baseUrl/users/me';
+  static const String notificationsMe = '$baseUrl/notifications/me';
+  static String courseAssignments(int courseId) =>
+      '$baseUrl/courses/$courseId/assignments';
+  static String courseQuizzes(int courseId) =>
+      '$baseUrl/courses/$courseId/quizzes';
+  static String contentDetail(int contentId) => '$baseUrl/contents/$contentId';
+  static String contentProgress(int contentId) =>
+      '$baseUrl/contents/$contentId/progress';
+  static String assignmentDetail(int assignmentId) =>
+      '$baseUrl/assignments/$assignmentId';
+  static String assignmentSubmit(int assignmentId) =>
+      '$baseUrl/assignments/$assignmentId/submissions';
+  static String assignmentSubmissions(int assignmentId) =>
+      '$baseUrl/assignments/$assignmentId/submissions';
+  static String assignmentSubmissionGrade(int assignmentId, int submissionId) =>
+      '$baseUrl/assignments/$assignmentId/submissions/$submissionId/grade';
+  static String studentRecommendations(int studentId) =>
+      '$baseUrl/students/$studentId/recommendations';
+  static String teamDetail(int teamId) => '$baseUrl/teams/$teamId';
+  static String courseTeams(int courseId) => '$baseUrl/courses/$courseId/teams';
+  static String courseTeamAutoGrouping(int courseId) =>
+      '$baseUrl/courses/$courseId/teams/auto-grouping';
+  static String courseInstructorGradebook(int courseId) =>
+      '$baseUrl/courses/$courseId/gradebook/instructor';
+  static String teamAnalytics(int teamId) => '$baseUrl/teams/$teamId/analytics';
+  static String teamMemberContributions(int teamId) =>
+      '$baseUrl/teams/$teamId/members/contributions';
+  static String teamTasks(int teamId) => '$baseUrl/teams/$teamId/tasks';
+  static String teamTaskStatus(int teamId, int taskId) =>
+      '$baseUrl/teams/$teamId/tasks/$taskId/status';
+  static String teamMeetingNotes(int teamId) =>
+      '$baseUrl/teams/$teamId/meeting-notes';
+  static String teamChatRoom(int teamId) => '$baseUrl/teams/$teamId/chat-room';
+  static String chatMessages(int roomId) =>
+      '$baseUrl/chat-rooms/$roomId/messages';
+  static String notificationRead(int notificationId) =>
+      '$baseUrl/notifications/$notificationId/read';
+
+  static String instructorDashboard(int courseId) =>
+      '$baseUrl/dashboard/instructor/courses/$courseId';
+  static String riskStudents(int courseId) =>
+      '$baseUrl/instructors/courses/$courseId/students/risk';
+  static String lowUnderstandingStudents(int courseId) =>
+      '$baseUrl/instructors/courses/$courseId/students/understanding-low';
+  static String interventions(int courseId) =>
+      '$baseUrl/instructors/courses/$courseId/interventions';
+}
