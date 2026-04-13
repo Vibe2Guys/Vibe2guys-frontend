@@ -1389,66 +1389,66 @@ class _StudentCourseOverview extends StatelessWidget {
             onWeekSelected(effectiveWeekId);
           });
         }
+        final overviewSection = SectionPanel(
+          title: heroTitle,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              InfoCard(
+                title: _displayText(course['title']),
+                content:
+                    '${_displayText(course['description'], emptyMessage: '강의 소개가 아직 없습니다.')}\n강의 코드 ${_displayText(course['courseCode'], emptyMessage: '-')} · ${course['isPublic'] == true ? '공개 강의' : '비공개 강의'}',
+              ),
+              InfoCard(
+                title: '강의 기본 정보',
+                content:
+                    '담당 교수 ${_displayText((course['instructor'] as Map<String, dynamic>?)?['name'], emptyMessage: '미정')} · 시작 ${_displayText(course['startDate'])} · 종료 ${_displayText(course['endDate'])}',
+              ),
+              Text(
+                heroSubtitle,
+                style: const TextStyle(
+                  color: Color(0xFF64757B),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              if (footer != null) ...[
+                const SizedBox(height: 12),
+                footer!,
+              ],
+            ],
+          ),
+        );
+
+        final weekSection = SectionPanel(
+          title: '주차 목록',
+          child: weeks.isEmpty
+              ? const EmptyStateCard(
+                  title: '등록된 주차가 없습니다',
+                  description: '강의 주차가 등록되면 이곳에서 순서대로 볼 수 있습니다.',
+                )
+              : Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: weeks.map((week) {
+                    return SizedBox(
+                      width: 220,
+                      child: _SelectionCard(
+                        title:
+                            '${_asInt(week['weekNumber'])}주차 · ${_displayText(week['title'])}',
+                        description: '클릭하면 주차별 자료와 콘텐츠를 볼 수 있습니다.',
+                        selected: _asInt(week['weekId']) == effectiveWeekId,
+                        onTap: () => onWeekSelected(_asInt(week['weekId'])),
+                      ),
+                    );
+                  }).toList(),
+                ),
+        );
+
         return Column(
           children: [
-            SectionPanel(
-              title: heroTitle,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  InfoCard(
-                    title: _displayText(course['title']),
-                    content:
-                        '${_displayText(course['description'], emptyMessage: '강의 소개가 아직 없습니다.')}\n강의 코드 ${_displayText(course['courseCode'], emptyMessage: '-')} · ${course['isPublic'] == true ? '공개 강의' : '비공개 강의'}',
-                  ),
-                  InfoCard(
-                    title: '강의 기본 정보',
-                    content:
-                        '담당 교수 ${_displayText((course['instructor'] as Map<String, dynamic>?)?['name'], emptyMessage: '미정')} · 시작 ${_displayText(course['startDate'])} · 종료 ${_displayText(course['endDate'])}',
-                  ),
-                  Text(
-                    heroSubtitle,
-                    style: const TextStyle(
-                      color: Color(0xFF64757B),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  if (footer != null) ...[
-                    const SizedBox(height: 12),
-                    footer!,
-                  ],
-                ],
-              ),
-            ),
+            overviewSection,
             const SizedBox(height: 16),
-            SectionPanel(
-              title: '주차 목록',
-              child: weeks.isEmpty
-                  ? const EmptyStateCard(
-                      title: '등록된 주차가 없습니다',
-                      description: '강의 주차가 등록되면 이곳에서 순서대로 볼 수 있습니다.',
-                    )
-                  : Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      children: weeks
-                          .map(
-                            (week) => SizedBox(
-                              width: 220,
-                              child: _SelectionCard(
-                                title:
-                                    '${_asInt(week['weekNumber'])}주차 · ${_displayText(week['title'])}',
-                                description: '클릭하면 주차별 자료와 콘텐츠를 볼 수 있습니다.',
-                                selected:
-                                    _asInt(week['weekId']) == effectiveWeekId,
-                                onTap: () =>
-                                    onWeekSelected(_asInt(week['weekId'])),
-                              ),
-                            ),
-                          )
-                          .toList(),
-                    ),
-            ),
+            weekSection,
             const SizedBox(height: 16),
             if (effectiveWeekId != null)
               _StudentWeekPreview(
@@ -1799,56 +1799,201 @@ class StudentAssignmentPage extends StatefulWidget {
 
 class _StudentAssignmentPageState extends State<StudentAssignmentPage> {
   final TextEditingController answerController = TextEditingController();
+  int refreshSeed = 0;
+  int? selectedCourseId;
+  int? selectedAssignmentId;
+
+  @override
+  void dispose() {
+    answerController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<ApiResponse<Map<String, dynamic>>>(
-      future: widget.controller.api.getAssignmentDetail(7001),
+    return FutureBuilder<ApiResponse<List<Map<String, dynamic>>>>(
+      key: ValueKey(refreshSeed),
+      future: widget.controller.api.getMyCourses(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData)
+        if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
-        final assignment = snapshot.data!.data!;
+        }
+        final courses = snapshot.data!.data ?? [];
+        if (selectedCourseId == null && courses.isNotEmpty) {
+          selectedCourseId = _asInt(courses.first['courseId']);
+        }
         return ListView(
           children: [
             const DashboardHeroCard(
               title: '과제',
-              subtitle: '과제 내용을 확인하고 제출 답변을 작성할 수 있습니다.',
+              subtitle: '수강 중인 강의별로 과제를 확인하고 제출할 수 있습니다.',
             ),
             const SizedBox(height: 16),
-            InfoCard(
-              title:
-                  _displayText(assignment['title'], emptyMessage: '과제 제목 미정'),
-              content: _displayText(
-                assignment['description'],
-                emptyMessage: '과제 설명이 아직 없습니다.',
-              ),
+            SectionPanel(
+              title: '강의 선택',
+              child: courses.isEmpty
+                  ? const EmptyStateCard(
+                      title: '수강 중인 강의가 없습니다',
+                      description: '강의를 등록하면 강의별 과제가 여기에 표시됩니다.',
+                    )
+                  : Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: courses
+                          .map(
+                            (course) => SizedBox(
+                              width: 260,
+                              child: _SelectionCard(
+                                title: _displayText(course['title']),
+                                description:
+                                    '미제출 ${_asInt(course['assignmentPendingCount'])}개',
+                                selected: _asInt(course['courseId']) ==
+                                    selectedCourseId,
+                                onTap: () {
+                                  setState(() {
+                                    selectedCourseId =
+                                        _asInt(course['courseId']);
+                                    selectedAssignmentId = null;
+                                  });
+                                },
+                              ),
+                            ),
+                          )
+                          .toList(),
+                    ),
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: answerController,
-              maxLines: 6,
-              decoration: const InputDecoration(
-                hintText: '답변을 입력하세요',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            FilledButton(
-              onPressed: () async {
-                final response = await widget.controller.api.submitAssignment(
-                  assignmentId: 7001,
-                  answerText: answerController.text,
-                );
-                if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(response.message)),
-                );
-              },
-              child: const Text('과제 제출'),
-            ),
+            const SizedBox(height: 16),
+            if (selectedCourseId != null)
+              _buildAssignmentArea(selectedCourseId!),
             const SizedBox(height: 10),
+            const EndpointChip(label: 'GET ${Endpoints.coursesMy}'),
+            EndpointChip(label: 'GET ${Endpoints.courseAssignments(101)}'),
             EndpointChip(label: 'GET ${Endpoints.assignmentDetail(7001)}'),
             EndpointChip(label: 'POST ${Endpoints.assignmentSubmit(7001)}'),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildAssignmentArea(int courseId) {
+    return FutureBuilder<ApiResponse<List<Map<String, dynamic>>>>(
+      future: widget.controller.api.getCourseAssignments(courseId),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final assignments = snapshot.data!.data ?? [];
+        if (selectedAssignmentId == null && assignments.isNotEmpty) {
+          selectedAssignmentId = _asInt(assignments.first['assignmentId']);
+        }
+        return Column(
+          children: [
+            SectionPanel(
+              title: '강의별 과제 목록',
+              child: assignments.isEmpty
+                  ? const EmptyStateCard(
+                      title: '등록된 과제가 없습니다',
+                      description: '교수자가 과제를 등록하면 여기에서 확인할 수 있습니다.',
+                    )
+                  : Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: assignments
+                          .map(
+                            (assignment) => SizedBox(
+                              width: 280,
+                              child: _SelectionCard(
+                                title: _displayText(assignment['title']),
+                                description:
+                                    '마감 ${_displayText(assignment['dueAt'])}\n${assignment['isSubmitted'] == true ? '제출 완료' : '미제출'}',
+                                selected: _asInt(assignment['assignmentId']) ==
+                                    selectedAssignmentId,
+                                onTap: () {
+                                  setState(() {
+                                    selectedAssignmentId =
+                                        _asInt(assignment['assignmentId']);
+                                  });
+                                },
+                              ),
+                            ),
+                          )
+                          .toList(),
+                    ),
+            ),
+            const SizedBox(height: 16),
+            if (selectedAssignmentId != null)
+              FutureBuilder<ApiResponse<Map<String, dynamic>>>(
+                future: widget.controller.api
+                    .getAssignmentDetail(selectedAssignmentId!),
+                builder: (context, detailSnapshot) {
+                  if (!detailSnapshot.hasData) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  final assignment = detailSnapshot.data!.data!;
+                  return SectionPanel(
+                    title: '과제 상세',
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        InfoCard(
+                          title: _displayText(
+                            assignment['title'],
+                            emptyMessage: '과제 제목 미정',
+                          ),
+                          content: _displayText(
+                            assignment['description'],
+                            emptyMessage: '과제 설명이 아직 없습니다.',
+                          ),
+                        ),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            _StatusChip(
+                              label: '유형',
+                              value: _displayText(assignment['type']),
+                            ),
+                            _StatusChip(
+                              label: '마감',
+                              value: _displayText(assignment['dueAt']),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: answerController,
+                          maxLines: 6,
+                          decoration: const InputDecoration(
+                            hintText: '답변을 입력하세요',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        FilledButton(
+                          onPressed: () async {
+                            final response =
+                                await widget.controller.api.submitAssignment(
+                              assignmentId: selectedAssignmentId!,
+                              answerText: answerController.text,
+                            );
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(response.message)),
+                            );
+                            if (response.success) {
+                              setState(() {
+                                refreshSeed++;
+                              });
+                            }
+                          },
+                          child: const Text('과제 제출'),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
           ],
         );
       },
@@ -2460,13 +2605,22 @@ class _InstructorCourseManagementPageState
   final TextEditingController contentOpenAtController = TextEditingController(
     text: '2026-05-01T09:00:00Z',
   );
+  final TextEditingController assignmentTitleController =
+      TextEditingController();
+  final TextEditingController assignmentDescriptionController =
+      TextEditingController();
+  final TextEditingController assignmentDueAtController = TextEditingController(
+    text: '2026-05-20T23:59:59Z',
+  );
 
   int refreshSeed = 0;
   int? selectedCourseId;
   int? selectedWeekId;
   String selectedContentType = 'VOD';
+  String selectedAssignmentType = 'SUBJECTIVE';
   bool isSequentialRelease = false;
   bool isPublicCourse = true;
+  bool isTeamAssignment = false;
   bool uploadingVideo = false;
   bool uploadingThumbnail = false;
   bool uploadingDocument = false;
@@ -2488,6 +2642,9 @@ class _InstructorCourseManagementPageState
     contentDurationController.dispose();
     contentScheduledAtController.dispose();
     contentOpenAtController.dispose();
+    assignmentTitleController.dispose();
+    assignmentDescriptionController.dispose();
+    assignmentDueAtController.dispose();
     super.dispose();
   }
 
@@ -2750,6 +2907,8 @@ class _InstructorCourseManagementPageState
             const SizedBox(height: 16),
             if (selectedWeekId != null)
               _buildContentManager(courseId, selectedWeekId!),
+            const SizedBox(height: 16),
+            _buildAssignmentManager(courseId),
           ],
         );
       },
@@ -2903,6 +3062,90 @@ class _InstructorCourseManagementPageState
     );
   }
 
+  Widget _buildAssignmentManager(int courseId) {
+    return FutureBuilder<ApiResponse<List<Map<String, dynamic>>>>(
+      future: widget.controller.api.getCourseAssignments(courseId),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final assignments = snapshot.data!.data ?? [];
+        return SectionPanel(
+          title: '과제 관리',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _AuthTextField(
+                controller: assignmentTitleController,
+                label: '과제 제목',
+                hintText: '예: 3주차 개념 정리 과제',
+              ),
+              const SizedBox(height: 12),
+              _AuthTextField(
+                controller: assignmentDescriptionController,
+                label: '과제 설명',
+                hintText: '학생에게 보여줄 과제 안내를 입력하세요',
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: SegmentedButton<String>(
+                      segments: const [
+                        ButtonSegment(value: 'SUBJECTIVE', label: Text('서술형')),
+                        ButtonSegment(value: 'DESCRIPTIVE', label: Text('확장형')),
+                      ],
+                      selected: {selectedAssignmentType},
+                      onSelectionChanged: (selection) {
+                        setState(() {
+                          selectedAssignmentType = selection.first;
+                        });
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              SwitchListTile(
+                value: isTeamAssignment,
+                contentPadding: EdgeInsets.zero,
+                title: const Text('팀 과제'),
+                subtitle: const Text('팀 단위로 과제를 수행하는 과제로 표시합니다.'),
+                onChanged: (value) => setState(() => isTeamAssignment = value),
+              ),
+              _AuthTextField(
+                controller: assignmentDueAtController,
+                label: '마감 시각',
+                hintText: '2026-05-20T23:59:59Z',
+              ),
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: FilledButton(
+                  onPressed: () => _createAssignment(courseId),
+                  child: const Text('과제 생성'),
+                ),
+              ),
+              const SizedBox(height: 18),
+              if (assignments.isEmpty)
+                const EmptyStateCard(
+                  title: '등록된 과제가 없습니다',
+                  description: '과제를 만들면 학생들이 강의별로 확인할 수 있습니다.',
+                )
+              else
+                ...assignments.map(
+                  (assignment) => InfoCard(
+                    title: _displayText(assignment['title']),
+                    content:
+                        '마감 ${_displayText(assignment['dueAt'])} · ${assignment['teamAssignment'] == true ? '팀 과제' : '개인 과제'} · ${_displayText(assignment['type'])}',
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _createCourse() async {
     final response = await widget.controller.api.createCourse(
       title: courseTitleController.text.trim(),
@@ -2963,6 +3206,27 @@ class _InstructorCourseManagementPageState
       contentVideoUrlController.clear();
       contentDocumentUrlController.clear();
       contentDurationController.text = '0';
+    });
+  }
+
+  Future<void> _createAssignment(int courseId) async {
+    final response = await widget.controller.api.createAssignment(
+      courseId: courseId,
+      title: assignmentTitleController.text.trim(),
+      description: assignmentDescriptionController.text.trim(),
+      type: selectedAssignmentType,
+      dueAt: assignmentDueAtController.text.trim(),
+      teamAssignment: isTeamAssignment,
+    );
+    _notify(response.message);
+    if (!response.success) return;
+    setState(() {
+      refreshSeed++;
+      assignmentTitleController.clear();
+      assignmentDescriptionController.clear();
+      assignmentDueAtController.text = '2026-05-20T23:59:59Z';
+      isTeamAssignment = false;
+      selectedAssignmentType = 'SUBJECTIVE';
     });
   }
 

@@ -80,6 +80,14 @@ abstract class ApiClient {
   });
   Future<ApiResponse<List<Map<String, dynamic>>>> getCourseAssignments(
       int courseId);
+  Future<ApiResponse<Map<String, dynamic>>> createAssignment({
+    required int courseId,
+    required String title,
+    required String description,
+    required String type,
+    required String dueAt,
+    required bool teamAssignment,
+  });
   Future<ApiResponse<List<Map<String, dynamic>>>> getCourseQuizzes(
       int courseId);
   Future<ApiResponse<Map<String, dynamic>>> getContentDetail(int contentId);

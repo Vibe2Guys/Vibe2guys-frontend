@@ -596,6 +596,32 @@ class MockApiClient implements ApiClient {
   }
 
   @override
+  Future<ApiResponse<Map<String, dynamic>>> createAssignment({
+    required int courseId,
+    required String title,
+    required String description,
+    required String type,
+    required String dueAt,
+    required bool teamAssignment,
+  }) async {
+    final unauthorized = _unauthorized<Map<String, dynamic>>();
+    if (unauthorized != null) return unauthorized;
+    await Future<void>.delayed(const Duration(milliseconds: 180));
+    return ApiResponse(
+      success: true,
+      message: '과제 생성 완료',
+      data: {
+        'assignmentId': 8000,
+        'courseId': courseId,
+        'title': title,
+        'type': type,
+        'dueAt': dueAt,
+        'teamAssignment': teamAssignment,
+      },
+    );
+  }
+
+  @override
   Future<ApiResponse<List<Map<String, dynamic>>>> getCourseQuizzes(
       int courseId) async {
     final unauthorized = _unauthorized<List<Map<String, dynamic>>>();

@@ -316,6 +316,27 @@ class HttpApiClient implements ApiClient {
       _getList('/courses/$courseId/assignments');
 
   @override
+  Future<ApiResponse<Map<String, dynamic>>> createAssignment({
+    required int courseId,
+    required String title,
+    required String description,
+    required String type,
+    required String dueAt,
+    required bool teamAssignment,
+  }) {
+    return _postMap(
+      '/courses/$courseId/assignments',
+      body: {
+        'title': title,
+        'description': description,
+        'type': type,
+        'dueAt': dueAt,
+        'teamAssignment': teamAssignment,
+      },
+    );
+  }
+
+  @override
   Future<ApiResponse<List<Map<String, dynamic>>>> getCourseQuizzes(
           int courseId) =>
       _getList('/courses/$courseId/quizzes');
@@ -718,6 +739,16 @@ class HttpApiClient implements ApiClient {
       );
     }
     if (path.startsWith('/courses/') && path.endsWith('/assignments')) {
+      if (body != null) {
+        return _fallback.createAssignment(
+          courseId: _extractId(path),
+          title: (body['title'] as String?) ?? '',
+          description: (body['description'] as String?) ?? '',
+          type: (body['type'] as String?) ?? 'SUBJECTIVE',
+          dueAt: (body['dueAt'] as String?) ?? '',
+          teamAssignment: body['teamAssignment'] == true,
+        );
+      }
       return _fallback.getCourseAssignments(_extractId(path));
     }
     if (path.startsWith('/courses/') && path.endsWith('/learning-logs/me')) {
