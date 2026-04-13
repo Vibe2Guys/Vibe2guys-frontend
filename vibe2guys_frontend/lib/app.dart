@@ -12,6 +12,207 @@ const bool kShowDeveloperApi = bool.fromEnvironment(
   defaultValue: false,
 );
 
+class AppTheme {
+  static const Color primary = Color(0xFF0F766E);
+  static const Color primaryContainer = Color(0xFFDDF4EF);
+  static const Color secondary = Color(0xFF334155);
+  static const Color tertiary = Color(0xFF64748B);
+  static const Color surface = Color(0xFFF8FAFC);
+  static const Color surfaceContainer = Color(0xFFFFFFFF);
+  static const Color surfaceAlt = Color(0xFFF1F5F9);
+  static const Color border = Color(0xFFE2E8F0);
+  static const Color borderStrong = Color(0xFFCBD5E1);
+  static const Color textPrimary = Color(0xFF0F172A);
+  static const Color textSecondary = Color(0xFF475569);
+  static const Color textMuted = Color(0xFF64748B);
+  static const Color danger = Color(0xFFDC2626);
+  static const Color warning = Color(0xFFD97706);
+  static const Color success = Color(0xFF15803D);
+
+  static const BorderRadius radiusMedium =
+      BorderRadius.all(Radius.circular(16));
+  static const BorderRadius radiusLarge = BorderRadius.all(Radius.circular(24));
+  static const EdgeInsets pagePadding = EdgeInsets.all(24);
+  static const EdgeInsets sectionPadding = EdgeInsets.all(20);
+  static const EdgeInsets cardPadding = EdgeInsets.all(18);
+
+  static ColorScheme colorScheme = const ColorScheme.light(
+    primary: primary,
+    onPrimary: Colors.white,
+    primaryContainer: primaryContainer,
+    onPrimaryContainer: textPrimary,
+    secondary: secondary,
+    onSecondary: Colors.white,
+    tertiary: tertiary,
+    onTertiary: Colors.white,
+    error: danger,
+    onError: Colors.white,
+    surface: surface,
+    onSurface: textPrimary,
+    outline: borderStrong,
+    outlineVariant: border,
+  );
+
+  static ThemeData lightTheme() {
+    final base = ThemeData(
+      useMaterial3: true,
+      fontFamily: 'Segoe UI',
+      colorScheme: colorScheme,
+    );
+    return base.copyWith(
+      scaffoldBackgroundColor: surface,
+      textTheme: base.textTheme.copyWith(
+        headlineLarge: const TextStyle(
+          fontSize: 34,
+          fontWeight: FontWeight.w800,
+          color: textPrimary,
+          height: 1.1,
+        ),
+        headlineMedium: const TextStyle(
+          fontSize: 28,
+          fontWeight: FontWeight.w800,
+          color: textPrimary,
+          height: 1.15,
+        ),
+        headlineSmall: const TextStyle(
+          fontSize: 22,
+          fontWeight: FontWeight.w800,
+          color: textPrimary,
+          height: 1.2,
+        ),
+        titleLarge: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w800,
+          color: textPrimary,
+        ),
+        titleMedium: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          color: textPrimary,
+        ),
+        bodyLarge: const TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w500,
+          color: textSecondary,
+          height: 1.6,
+        ),
+        bodyMedium: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          color: textSecondary,
+          height: 1.5,
+        ),
+        bodySmall: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+          color: textMuted,
+          height: 1.45,
+        ),
+        labelLarge: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: textPrimary,
+        ),
+      ),
+      cardTheme: const CardThemeData(
+        color: surfaceContainer,
+        elevation: 0,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(borderRadius: radiusMedium),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          elevation: 0,
+          backgroundColor: primary,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          shape: const RoundedRectangleBorder(borderRadius: radiusMedium),
+          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          elevation: 0,
+          backgroundColor: primary,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          shape: const RoundedRectangleBorder(borderRadius: radiusMedium),
+          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: surface,
+        hintStyle: const TextStyle(color: textMuted),
+        labelStyle: const TextStyle(color: textSecondary),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        border: _inputBorder(border),
+        enabledBorder: _inputBorder(border),
+        focusedBorder: _inputBorder(primary, width: 1.4),
+        errorBorder: _inputBorder(danger, width: 1.2),
+        focusedErrorBorder: _inputBorder(danger, width: 1.4),
+        errorMaxLines: 2,
+        errorStyle: const TextStyle(
+          color: danger,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      dividerColor: border,
+    );
+  }
+
+  static OutlineInputBorder _inputBorder(Color color, {double width = 1}) {
+    return OutlineInputBorder(
+      borderRadius: radiusMedium,
+      borderSide: BorderSide(color: color, width: width),
+    );
+  }
+
+  static BoxDecoration panelDecoration({
+    Color background = surfaceContainer,
+    bool elevated = false,
+    Color borderColor = border,
+  }) {
+    return BoxDecoration(
+      color: background,
+      borderRadius: radiusMedium,
+      border: Border.all(color: borderColor),
+      boxShadow: elevated
+          ? const [
+              BoxShadow(
+                color: Color(0x120F172A),
+                blurRadius: 24,
+                offset: Offset(0, 12),
+              ),
+            ]
+          : const [],
+    );
+  }
+
+  static BoxDecoration shellDecoration() {
+    return const BoxDecoration(
+      gradient: LinearGradient(
+        colors: [Color(0xFFF8FAFC), Color(0xFFF1F5F9)],
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+      ),
+    );
+  }
+
+  static BoxDecoration heroDecoration() {
+    return const BoxDecoration(
+      borderRadius: radiusLarge,
+      gradient: LinearGradient(
+        colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+    );
+  }
+}
+
 class LearnSightApp extends StatefulWidget {
   const LearnSightApp({super.key});
 
@@ -27,11 +228,7 @@ class _LearnSightAppState extends State<LearnSightApp> {
     return MaterialApp(
       title: 'LearnSight',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        fontFamily: 'Segoe UI',
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF0E7A66)),
-      ),
+      theme: AppTheme.lightTheme(),
       home: AnimatedBuilder(
         animation: controller,
         builder: (context, _) {
@@ -186,33 +383,21 @@ class _LoginPageState extends State<LoginPage>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final isRegister = mode == AuthMode.register;
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF051B2B), Color(0xFF0C4A5B), Color(0xFFE5F6F1)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
+        decoration: AppTheme.shellDecoration(),
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 980),
             child: Container(
               margin: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(28),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x22051B2B),
-                    blurRadius: 42,
-                    offset: Offset(0, 20),
-                  ),
-                ],
-              ),
+              decoration: AppTheme.panelDecoration(
+                elevated: true,
+                borderColor: AppTheme.border,
+              ).copyWith(borderRadius: AppTheme.radiusLarge),
               child: Row(
                 children: [
                   Expanded(
@@ -222,7 +407,7 @@ class _LoginPageState extends State<LoginPage>
                         borderRadius:
                             BorderRadius.horizontal(left: Radius.circular(28)),
                         gradient: LinearGradient(
-                          colors: [Color(0xFF0B2435), Color(0xFF0E5C63)],
+                          colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
@@ -235,25 +420,24 @@ class _LoginPageState extends State<LoginPage>
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 14, vertical: 8),
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.12),
+                              color: Colors.white.withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(999),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.12),
+                              ),
                             ),
-                            child: const Text(
+                            child: Text(
                               'AI Learning Analytics Platform',
-                              style: TextStyle(
+                              style: theme.textTheme.labelLarge?.copyWith(
                                 color: Colors.white,
-                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
                           const SizedBox(height: 22),
-                          const Text(
+                          Text(
                             'LearnSight',
-                            style: TextStyle(
+                            style: theme.textTheme.headlineLarge?.copyWith(
                               color: Colors.white,
-                              fontSize: 34,
-                              fontWeight: FontWeight.w800,
-                              height: 1.15,
                             ),
                           ),
                           const SizedBox(height: 14),
@@ -261,10 +445,8 @@ class _LoginPageState extends State<LoginPage>
                             isRegister
                                 ? '몇 가지 정보만 입력하면 LearnSight 계정을 바로 만들 수 있습니다.'
                                 : 'LearnSight에서 학습 상태를 확인하고 강의 데이터를 한 화면에서 관리할 수 있습니다.',
-                            style: const TextStyle(
-                              color: Color(0xFFD5ECE7),
-                              fontSize: 15,
-                              height: 1.6,
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              color: const Color(0xFFCBD5E1),
                             ),
                           ),
                           const SizedBox(height: 30),
@@ -306,8 +488,8 @@ class _LoginPageState extends State<LoginPage>
                             Container(
                               padding: const EdgeInsets.all(6),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF1F5F4),
-                                borderRadius: BorderRadius.circular(16),
+                                color: AppTheme.surfaceAlt,
+                                borderRadius: AppTheme.radiusMedium,
                               ),
                               child: SizedBox(
                                 width: double.infinity,
@@ -405,6 +587,7 @@ class _LoginPageState extends State<LoginPage>
                                       }
                                     }
                                   : null,
+                              onSubmitted: !isRegister ? _submitLogin : null,
                             ),
                             if (isRegister) ...[
                               const SizedBox(height: 14),
@@ -420,10 +603,7 @@ class _LoginPageState extends State<LoginPage>
                             if (!isRegister) ...[
                               const Text(
                                 '로그인 역할',
-                                style: TextStyle(
-                                  color: Color(0xFF516168),
-                                  fontWeight: FontWeight.w700,
-                                ),
+                                style: TextStyle(fontWeight: FontWeight.w700),
                               ),
                               const SizedBox(height: 10),
                               SegmentedButton<UserRole>(
@@ -459,10 +639,7 @@ class _LoginPageState extends State<LoginPage>
                             ] else ...[
                               const Text(
                                 '회원가입 역할',
-                                style: TextStyle(
-                                  color: Color(0xFF516168),
-                                  fontWeight: FontWeight.w700,
-                                ),
+                                style: TextStyle(fontWeight: FontWeight.w700),
                               ),
                               const SizedBox(height: 10),
                               SegmentedButton<UserRole>(
@@ -502,11 +679,9 @@ class _LoginPageState extends State<LoginPage>
                               width: double.infinity,
                               child: FilledButton(
                                 style: FilledButton.styleFrom(
+                                  backgroundColor: colorScheme.primary,
                                   padding:
                                       const EdgeInsets.symmetric(vertical: 18),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
                                 ),
                                 onPressed: widget.controller.loading
                                     ? null
@@ -528,10 +703,7 @@ class _LoginPageState extends State<LoginPage>
                               isRegister
                                   ? '가입 후 같은 화면에서 바로 로그인할 수 있습니다.'
                                   : '테스트 계정이 있으면 이메일과 비밀번호만 입력하면 됩니다.',
-                              style: const TextStyle(
-                                color: Color(0xFF7B8A90),
-                                fontSize: 13,
-                              ),
+                              style: theme.textTheme.bodySmall,
                             ),
                           ],
                         ),
@@ -702,6 +874,7 @@ class _AuthTextField extends StatelessWidget {
     this.obscureText = false,
     this.errorText,
     this.onChanged,
+    this.onSubmitted,
   });
 
   final TextEditingController controller;
@@ -713,9 +886,11 @@ class _AuthTextField extends StatelessWidget {
   final bool obscureText;
   final String? errorText;
   final ValueChanged<String>? onChanged;
+  final VoidCallback? onSubmitted;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return TextField(
       controller: controller,
       focusNode: focusNode,
@@ -730,39 +905,13 @@ class _AuthTextField extends StatelessWidget {
         } else {
           FocusScope.of(context).unfocus();
         }
+        onSubmitted?.call();
       },
       decoration: InputDecoration(
         labelText: label,
         hintText: hintText,
-        filled: true,
-        fillColor: const Color(0xFFF7FAF9),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFFDCE8E4)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFF0E7A66), width: 1.4),
-        ),
         errorText: errorText,
-        errorMaxLines: 2,
-        errorStyle: const TextStyle(
-          color: Color(0xFFC43C35),
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFFC43C35), width: 1.2),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFFC43C35), width: 1.4),
-        ),
+        labelStyle: theme.inputDecorationTheme.labelStyle,
       ),
     );
   }
@@ -774,6 +923,8 @@ class AppShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final role = controller.user!.role;
     final items = role == UserRole.student
         ? [
@@ -798,47 +949,43 @@ class AppShell extends StatelessWidget {
       body: Row(
         children: [
           Container(
-            width: 132,
+            width: 144,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFF9FFFC), Color(0xFFF0F8FF)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
+              color: Colors.white.withValues(alpha: 0.92),
               border: Border(
                 right: BorderSide(
-                  color: const Color(0xFFD7E7E2).withValues(alpha: 0.9),
+                  color: AppTheme.border,
                 ),
               ),
               boxShadow: const [
                 BoxShadow(
-                  color: Color(0x120A3A33),
-                  blurRadius: 20,
-                  offset: Offset(6, 0),
+                  color: Color(0x0F0F172A),
+                  blurRadius: 18,
+                  offset: Offset(4, 0),
                 ),
               ],
             ),
             child: NavigationRail(
               selectedIndex: currentIndex,
-              minWidth: 92,
+              minWidth: 100,
               groupAlignment: -0.85,
               backgroundColor: Colors.transparent,
-              indicatorColor: const Color(0xFFDDF6ED),
-              selectedIconTheme: const IconThemeData(
-                color: Color(0xFF0E7A66),
-                size: 24,
-              ),
-              unselectedIconTheme: const IconThemeData(
-                color: Color(0xFF64757B),
+              indicatorColor: colorScheme.primaryContainer,
+              selectedIconTheme: IconThemeData(
+                color: colorScheme.primary,
                 size: 22,
               ),
-              selectedLabelTextStyle: const TextStyle(
-                color: Color(0xFF0E5C63),
+              unselectedIconTheme: const IconThemeData(
+                color: AppTheme.textMuted,
+                size: 21,
+              ),
+              selectedLabelTextStyle: TextStyle(
+                color: colorScheme.primary,
                 fontWeight: FontWeight.w800,
                 fontSize: 13,
               ),
               unselectedLabelTextStyle: const TextStyle(
-                color: Color(0xFF6A7A80),
+                color: AppTheme.textMuted,
                 fontWeight: FontWeight.w600,
                 fontSize: 13,
               ),
@@ -856,13 +1003,13 @@ class AppShell extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: controller.showingMyPage
-                          ? const Color(0xFFE7F7F0)
+                          ? colorScheme.primaryContainer
                           : Colors.white.withValues(alpha: 0.86),
                       borderRadius: BorderRadius.circular(22),
                       border: Border.all(
                         color: controller.showingMyPage
-                            ? const Color(0xFF0E7A66)
-                            : const Color(0xFFD7E7E2),
+                            ? colorScheme.primary
+                            : AppTheme.border,
                       ),
                     ),
                     child: Column(
@@ -891,7 +1038,7 @@ class AppShell extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             fontWeight: FontWeight.w800,
-                            color: Color(0xFF14353C),
+                            color: AppTheme.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 3),
@@ -900,7 +1047,7 @@ class AppShell extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF0E7A66),
+                            color: AppTheme.primary,
                           ),
                         ),
                       ],
@@ -913,7 +1060,7 @@ class AppShell extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.92),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFD7E7E2)),
+                  border: Border.all(color: AppTheme.border),
                 ),
                 child: IconButton(
                   onPressed: () => controller.logout(),
@@ -935,15 +1082,9 @@ class AppShell extends StatelessWidget {
           const VerticalDivider(width: 1),
           Expanded(
             child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFFF2FBF8), Color(0xFFE7F5FF)],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
-              ),
+              decoration: AppTheme.shellDecoration(),
               child: Padding(
-                padding: const EdgeInsets.all(20),
+                padding: AppTheme.pagePadding,
                 child: _buildBody(role, currentIndex),
               ),
             ),
@@ -1697,22 +1838,24 @@ class _CourseHomeTabButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(999),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFF0E7A66) : Colors.white,
+          color: selected ? colorScheme.primary : Colors.white,
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
-            color: selected ? const Color(0xFF0E7A66) : const Color(0xFFD7E7E2),
+            color: selected ? colorScheme.primary : AppTheme.border,
           ),
         ),
         child: Text(
           label,
-          style: TextStyle(
-            color: selected ? Colors.white : const Color(0xFF33535B),
+          style: theme.textTheme.labelLarge?.copyWith(
+            color: selected ? Colors.white : AppTheme.textSecondary,
             fontWeight: FontWeight.w800,
           ),
         ),
@@ -1728,14 +1871,11 @@ class _GradeItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFDCE8E4)),
-      ),
+      padding: const EdgeInsets.all(16),
+      decoration: AppTheme.panelDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1744,10 +1884,7 @@ class _GradeItemCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   _displayText(item['title']),
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: theme.textTheme.titleMedium,
                 ),
               ),
               _StatusChip(
@@ -5373,19 +5510,20 @@ class MetricCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final resolvedTone = tone ?? _StatusTone.neutral();
     return Container(
       width: 190,
-      padding: const EdgeInsets.all(16),
+      padding: AppTheme.cardPadding,
       decoration: BoxDecoration(
         color: resolvedTone.background,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppTheme.radiusMedium,
         border: Border.all(color: resolvedTone.border),
         boxShadow: [
           BoxShadow(
-            color: resolvedTone.border.withValues(alpha: 0.18),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
+            color: resolvedTone.border.withValues(alpha: 0.12),
+            blurRadius: 16,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
@@ -5394,14 +5532,14 @@ class MetricCard extends StatelessWidget {
         children: [
           Text(
             label,
-            style: TextStyle(fontSize: 13, color: resolvedTone.foreground),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: resolvedTone.foreground,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             value,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w800,
+            style: theme.textTheme.headlineSmall?.copyWith(
               color: resolvedTone.foreground,
             ),
           ),
@@ -5417,18 +5555,19 @@ class EndpointChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     if (!kShowDeveloperApi) return const SizedBox.shrink();
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF072B36),
+        color: const Color(0xFF111827),
         borderRadius: BorderRadius.circular(12),
       ),
       child: SelectableText(
         label,
-        style: const TextStyle(
-          color: Color(0xFFCAFFE8),
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: const Color(0xFFE2E8F0),
           fontFamily: 'Consolas',
         ),
       ),
@@ -5443,22 +5582,17 @@ class InfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFDCE8E4)),
-      ),
+      padding: AppTheme.cardPadding,
+      decoration: AppTheme.panelDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title,
-              style:
-                  const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+          Text(title, style: theme.textTheme.titleMedium),
           const SizedBox(height: 6),
-          Text(content),
+          Text(content, style: theme.textTheme.bodyMedium),
         ],
       ),
     );
@@ -5474,33 +5608,23 @@ class DashboardHeroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF0F7A66), Color(0xFF0B5F6D)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
+      padding: const EdgeInsets.all(24),
+      decoration: AppTheme.heroDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
-            ),
+            style:
+                theme.textTheme.headlineMedium?.copyWith(color: Colors.white),
           ),
           const SizedBox(height: 8),
           Text(
             subtitle,
-            style: const TextStyle(
-              color: Color(0xFFD7F0EA),
-              height: 1.5,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: const Color(0xFFCBD5E1),
             ),
           ),
         ],
@@ -5518,28 +5642,19 @@ class EmptyStateCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFDCE8E4)),
-      ),
+      padding: AppTheme.cardPadding,
+      decoration: AppTheme.panelDecoration(background: AppTheme.surfaceAlt),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.inbox_outlined, color: Color(0xFF6D8484)),
+          const Icon(Icons.inbox_outlined, color: AppTheme.textMuted),
           const SizedBox(height: 10),
-          Text(
-            title,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-          ),
+          Text(title, style: theme.textTheme.titleMedium),
           const SizedBox(height: 6),
-          Text(
-            description,
-            style: const TextStyle(color: Color(0xFF6A7A80), height: 1.5),
-          ),
+          Text(description, style: theme.textTheme.bodyMedium),
         ],
       ),
     );
@@ -5554,20 +5669,14 @@ class SectionPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFDCE8E4)),
-      ),
+      padding: AppTheme.sectionPadding,
+      decoration: AppTheme.panelDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
-          ),
+          Text(title, style: theme.textTheme.titleLarge),
           const SizedBox(height: 12),
           child,
         ],
@@ -5591,16 +5700,18 @@ class _SelectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: AppTheme.cardPadding,
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFFEAF7F3) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          color: selected ? colorScheme.primaryContainer : Colors.white,
+          borderRadius: AppTheme.radiusMedium,
           border: Border.all(
-            color: selected ? const Color(0xFF0E7A66) : const Color(0xFFDCE8E4),
+            color: selected ? colorScheme.primary : AppTheme.border,
             width: selected ? 1.4 : 1,
           ),
         ),
@@ -5609,13 +5720,10 @@ class _SelectionCard extends StatelessWidget {
           children: [
             Text(
               title,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+              style: theme.textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
-            Text(
-              description,
-              style: const TextStyle(color: Color(0xFF64757B), height: 1.5),
-            ),
+            Text(description, style: theme.textTheme.bodyMedium),
           ],
         ),
       ),
